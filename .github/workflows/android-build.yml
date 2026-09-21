@@ -129,36 +129,6 @@ jobs:
           echo "=== Generated buildozer.spec ==="
           cat buildozer.spec || echo "buildozer.spec not found"
 
-      # ── 10. Патч buildozer.spec — добавляем ассеты ──
-      - name: Patch buildozer.spec
-        run: |
-          cd ${{ github.workspace }}
-          
-          if [ ! -f buildozer.spec ]; then
-            echo "ERROR: buildozer.spec was not generated!"
-            exit 1
-          fi
-          
-          # Добавляем папки с ресурсами
-          sed -i 's|^source.include_exts = .*|source.include_exts = py,png,jpg,kv,atlas,svg,brick,ui,css,txt,json|' buildozer.spec
-          
-          # Убеждаемся, что assets и ui включены
-          if ! grep -q "source.include_dirs" buildozer.spec; then
-            echo "source.include_dirs = assets, ui" >> buildozer.spec
-          fi
-          
-          # Ориентация — landscape для эмулятора
-          sed -i 's|^orientation = .*|orientation = landscape|' buildozer.spec
-          
-          # Минимальный API
-          sed -i 's|^android.minapi = .*|android.minapi = 26|' buildozer.spec
-          
-          # Права
-          sed -i 's|^android.permissions = .*|android.permissions = |' buildozer.spec
-          
-          echo "=== Patched buildozer.spec ==="
-          cat buildozer.spec
-
       # ── 11. Сборка APK ──
       - name: Build APK
         run: |
