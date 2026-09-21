@@ -11,11 +11,10 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      PYTHON_VERSION: "3.11"
+      PYTHON_VERSION: "3.11"                 # <-- ИСПРАВЛЕНО: было "\3.11"
       QT_VERSION: "6.8.3"
       WHEELS_DIR: "./wheels"
-      # ГЛАВНАЯ ФИКСАЦИЯ ВЕРСИИ PYTHON ДЛЯ P4A
-      P4A_BUILD_PYTHON_VERSION: "3.11.13"
+      P4A_BUILD_PYTHON_VERSION: "3.11.13"   # <-- приоритет для python-for-android
 
     steps:
       - name: Checkout repository
@@ -92,24 +91,20 @@ jobs:
           if [ -f "buildozer.spec" ]; then
             echo "Patching buildozer.spec to force python.version = 3.11.13..."
             
-            # 1. Принудительно устанавливаем версию Python в конфиге
             if grep -q "^python.version" buildozer.spec; then
               sed -i 's/^python.version=.*/python.version = 3.11.13/' buildozer.spec
             else
               echo "python.version = 3.11.13" >> buildozer.spec
             fi
 
-            # 2. Гарантируем правильные requirements
             if grep -q "^requirements" buildozer.spec; then
               sed -i 's/^requirements=.*/requirements = python3,shiboken6,PySide6/' buildozer.spec
             else
               echo "requirements = python3,shiboken6,PySide6" >> buildozer.spec
             fi
 
-            # 3. Удаляем потенциально конфликтующие строки (например, старый p4a.commit)
             sed -i '/^p4a.commit/d' buildozer.spec
 
-            echo "=== Final buildozer.spec snippet ==="
             grep -E "python.version|requirements" buildozer.spec
           else
             echo "ERROR: buildozer.spec was not generated!"
