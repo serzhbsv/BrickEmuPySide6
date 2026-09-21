@@ -1,0 +1,56 @@
+{
+	"id": "25c96140-2851-40d7-b3c2-ac0eab331cd7",
+	"core": "KS57C21308",
+	"face_path": "./assets/PocketPuppy.svg",
+	"clock": 1000000,
+	
+	"buttons": {
+		"btnCircle": {
+			"hot_keys": [49, 80]
+		},
+		"btnLeft": {
+			"hot_keys": [65, 16777234]
+		},
+		"btnRight": {
+			"hot_keys": [68, 16777236]
+		},
+		"btnSquare": {
+			"hot_keys": [32, 16777220]
+		}
+	},
+
+	"display": {
+		"motion_blur": 0.6,
+		"ghost_segments": 0.05,
+		"shadow": 16
+	},
+
+	"peripherals": {
+		"direct_input": {
+			"btnCircle": {
+				"port": "PORT6",
+				"mask": 1,
+				"level": 0
+			},
+			"btnLeft": {
+				"port": "PORT6",
+				"mask": 2,
+				"level": 0
+			},
+			"btnRight": {
+				"port": "PORT6",
+				"mask": 4,
+				"level": 0
+			},
+			"btnSquare": {
+				"port": "PORT6",
+				"mask": 8,
+				"level": 0
+			}
+		}
+	},
+
+	"mask_options": {
+		"rom_path": "./assets/PocketPuppy.bin"
+	}
+}

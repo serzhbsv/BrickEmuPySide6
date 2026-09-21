@@ -1,0 +1,74 @@
+{
+	"id": "8d4a428e-9528-436c-b137-fd356a845d24",
+	"credits": "ROM photo and LCD vector image by Sean Riddle (https://seanriddle.com/)",
+	"core": "MSM50XX",
+	"face_path": "./assets/ZeldaNelsonic.svg",
+	"clock": 32768,
+	
+	"buttons": {
+		"btnLeft": {
+			"hot_keys": [65, 16777234]
+		},
+		"btnRight": {
+			"hot_keys": [68, 16777236]
+		},
+		"btnUp": {
+			"hot_keys": [87, 16777235]
+		},
+		"btnDown": {
+			"hot_keys": [83, 16777237]
+		},
+		"btnMode": {
+			"hot_keys": [49, 77]
+		},
+		"btnSet": {
+			"hot_keys": [50, 32]
+		}
+	},
+
+	"display": {
+		"motion_blur": 0.6,
+		"ghost_segments": 0,
+		"shadow": 18
+	},
+
+	"peripherals": {
+		"direct_input": {
+			"btnLeft": {
+				"port": "PK",
+				"mask": 4,
+				"level": 1
+			},
+			"btnRight": {
+				"port": "PK",
+				"mask": 1,
+				"level": 1
+			},
+			"btnUp": {
+				"port": "PK",
+				"mask": 2,
+				"level": 1
+			},
+			"btnDown": {
+				"port": "PK",
+				"mask": 8,
+				"level": 1
+			},
+			"btnMode": {
+				"port": "PS",
+				"mask": 1,
+				"level": 1
+			},
+			"btnSet": {
+				"port": "PS",
+				"mask": 2,
+				"level": 1
+			}
+		}
+	},
+
+	"mask_options": {
+		"rom_path": "./assets/ZeldaNelsonic.bin",
+		"sound_freq_div_tbl": [0, 6, 8, 10, 6, 7, 0, 6, 0, 5.5, 0, 6.5, 0, 7.5, 0, 8.5]
+	}
+}

@@ -1,0 +1,80 @@
+{
+	"id": "0d3daa9e-df85-46b8-9d16-019b77af0d27",
+	"core": "KS57C2504",
+	"face_path": "./assets/KotoKunekunetchyo.svg",
+	"clock": 1150000,
+	
+	"buttons": {
+		"btnStart": {
+			"hot_keys": [32, 16777220]
+		},
+		"btnSound": {
+			"hot_keys": [49]
+		},
+		"btnSelect": {
+			"hot_keys": [50]
+		},
+		"btnLeft": {
+			"hot_keys": [65, 16777234]
+		},
+		"btnRight": {
+			"hot_keys": [68, 16777236]
+		},
+		"btnUp": {
+			"hot_keys": [87, 16777235]
+		},
+		"btnDown": {
+			"hot_keys": [83, 16777237]
+		}
+	},
+
+	"display": {
+		"motion_blur": 0.6,
+		"ghost_segments": 0,
+		"shadow": 28
+	},
+
+	"peripherals": {
+		"direct_input": {
+			"btnStart": {
+				"port": "PORT1",
+				"mask": 2,
+				"level": 0
+			},
+			"btnSound": {
+				"port": "PORT1",
+				"mask": 4,
+				"level": 0
+			},
+			"btnSelect": {
+				"port": "PORT1",
+				"mask": 8,
+				"level": 0
+			},
+			"btnLeft": {
+				"port": "PORT0",
+				"mask": 2,
+				"level": 0
+			},
+			"btnRight": {
+				"port": "PORT0",
+				"mask": 1,
+				"level": 0
+			},
+			"btnUp": {
+				"port": "PORT0",
+				"mask": 8,
+				"level": 0
+			},
+			"btnDown": {
+				"port": "PORT0",
+				"mask": 4,
+				"level": 0
+			}
+		}
+	},
+
+	"mask_options": {
+		"rom_path": "./assets/KotoKunekunetchyo.bin"
+	}
+}

@@ -1,0 +1,82 @@
+{
+	"id": "c9218a2e-bf6a-44ac-b6e6-75542d48a464",
+	"core": "T7741",
+	"face_path": "./assets/IsogeDoraemon.svg",
+	"clock": 210000,
+	
+	"buttons": {
+		"btnDown": {
+			"hot_keys": [83, 16777237]
+		},
+		"btnUp": {
+			"hot_keys": [87, 16777235]
+		},
+		"btnMode": {
+			"hot_keys": [49, 77]
+		},
+		"btnAction": {
+			"hot_keys": [50, 32]
+		},
+		"btnACL": {
+			"hot_keys": [82]
+		}
+	},
+
+	"display": {
+		"motion_blur": 0.6,
+		"ghost_segments": 0,
+		"shadow": 18
+	},
+	
+	"peripherals": {
+		"matrix_input": {
+			"btnDown": {
+				"port": "INP",
+				"mask": 1,
+				"level": {
+					"port": "OUTP",
+					"mask": 1
+				}
+			},
+			"btnUp": {
+				"port": "INP",
+				"mask": 2,
+				"level": {
+					"port": "OUTP",
+					"mask": 1
+				}
+			},
+			"btnMode": {
+				"port": "INP",
+				"mask": 2,
+				"level": {
+					"port": "OUTP",
+					"mask": 2
+				}
+			},
+			"btnAction": {
+				"port": "INP",
+				"mask": 1,
+				"level": {
+					"port": "OUTP",
+					"mask": 2
+				}
+			}
+		},
+		"direct_input": {
+			"btnACL": {
+				"port": "RES",
+				"mask": 0,
+				"level": 1
+			}
+		}
+	},
+
+	"mask_options": {
+		"rom_path": "./assets/IsogeDoraemon.bin",
+		"prescaler_div": [2, 8, 32],
+		"sub_clock": 32768,
+		"com_div": 768,
+		"sound_gnd": 0
+	}
+}

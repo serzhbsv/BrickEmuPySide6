@@ -1,0 +1,203 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main, android-port]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: '3.11'
+  QT_VERSION: '6.8.3'
+  NDK_VERSION: 'r27c'
+  ARCH: 'aarch64'
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      # ── 1. Чекаут проекта ──
+      - name: Checkout project
+        uses: actions/checkout@v4
+
+      # ── 2. Python ──
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      # ── 3. Системные зависимости ──
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            openjdk-17-jdk \
+            unzip \
+            wget \
+            git \
+            cmake \
+            ninja-build \
+            libssl-dev \
+            p7zip-full \
+            autoconf \
+            libtool \
+            pkg-config
+          echo "JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64" >> $GITHUB_ENV
+          echo "$JAVA_HOME/bin" >> $GITHUB_PATH
+
+      # ── 4. Клон pyside-setup (нужен для скрипта загрузки SDK/NDK) ──
+      - name: Clone pyside-setup
+        run: |
+          git clone https://code.qt.io/pyside/pyside-setup.git ~/pyside-setup
+          cd ~/pyside-setup
+          git checkout ${{ env.QT_VERSION }}
+
+      # ── 5. Установка Python-зависимостей pyside-setup ──
+      - name: Install pyside-setup requirements
+        run: |
+          pip install -r ~/pyside-setup/requirements.txt
+          pip install -r ~/pyside-setup/tools/cross_compile_android/requirements.txt
+
+      # ── 6. Загрузка Android SDK и NDK ──
+      - name: Download Android SDK and NDK
+        run: |
+          cd ~/pyside-setup
+          python tools/cross_compile_android/main.py \
+            --download-only \
+            --skip-update \
+            --auto-accept-license
+
+      # ── 7. Скачивание PySide6 Android wheels ──
+      - name: Download PySide6 Android wheels
+        run: |
+          mkdir -p ~/wheels
+          pip download PySide6==${{ env.QT_VERSION }} \
+            --platform android_${{ env.ARCH }} \
+            --only-binary=:all: \
+            -d ~/wheels
+          pip download shiboken6==${{ env.QT_VERSION }} \
+            --platform android_${{ env.ARCH }} \
+            --only-binary=:all: \
+            -d ~/wheels
+          echo "Wheels downloaded:"
+          ls -la ~/wheels/
+
+      # ── 8. Поиск путей к wheel-файлам ──
+      - name: Find wheel paths
+        id: wheels
+        run: |
+          PYSIDE_WHEEL=$(find ~/wheels -name "PySide6-*.whl" | head -1)
+          SHIBOKEN_WHEEL=$(find ~/wheels -name "shiboken6-*.whl" | head -1)
+          echo "pyside_wheel=$PYSIDE_WHEEL" >> $GITHUB_OUTPUT
+          echo "shiboken_wheel=$SHIBOKEN_WHEEL" >> $GITHUB_OUTPUT
+          echo "Found PySide6 wheel: $PYSIDE_WHEEL"
+          echo "Found Shiboken6 wheel: $SHIBOKEN_WHEEL"
+
+      # ── 9. Генерация buildozer.spec (dry-run) ──
+      - name: Generate buildozer.spec
+        run: |
+          cd ${{ github.workspace }}
+          
+          # Создаём минимальный pysidedeploy.spec, если нет
+          if [ ! -f pysidedeploy.spec ]; then
+            cat > pysidedeploy.spec << 'SPEC'
+          [QtConfig]
+          windows = false
+          linux = true
+          macos = false
+          android = true
+          
+          [Config]
+          appname = BrickEmuPy
+          description = Retro LCD game emulator
+          version = 1.0.0
+          url = https://github.com/azya52/BrickEmuPy
+          icon = assets/icon.png
+          
+          [Buildozer]
+          mode = debug
+          SPEC
+          fi
+
+          # Запускаем deploy с паузой — генерирует buildozer.spec
+          # Используем timeout чтобы он "упал" на паузе, но spec уже создастся
+          timeout 30 pyside6-android-deploy \
+            --wheel-pyside=${{ steps.wheels.outputs.pyside_wheel }} \
+            --wheel-shiboken=${{ steps.wheels.outputs.shiboken_wheel }} \
+            --name=main \
+            --ndk-path ~/pyside-setup/.pyside6_android_deploy/android-ndk/android-ndk-${{ env.NDK_VERSION }} \
+            --sdk-path ~/pyside-setup/.pyside6_android_deploy/android-sdk/ \
+            || true
+          
+          echo "=== Generated buildozer.spec ==="
+          cat buildozer.spec || echo "buildozer.spec not found"
+
+      # ── 10. Патч buildozer.spec — добавляем ассеты ──
+      - name: Patch buildozer.spec
+        run: |
+          cd ${{ github.workspace }}
+          
+          if [ ! -f buildozer.spec ]; then
+            echo "ERROR: buildozer.spec was not generated!"
+            exit 1
+          fi
+          
+          # Добавляем папки с ресурсами
+          sed -i 's|^source.include_exts = .*|source.include_exts = py,png,jpg,kv,atlas,svg,brick,ui,css,txt,json|' buildozer.spec
+          
+          # Убеждаемся, что assets и ui включены
+          if ! grep -q "source.include_dirs" buildozer.spec; then
+            echo "source.include_dirs = assets, ui" >> buildozer.spec
+          fi
+          
+          # Ориентация — landscape для эмулятора
+          sed -i 's|^orientation = .*|orientation = landscape|' buildozer.spec
+          
+          # Минимальный API
+          sed -i 's|^android.minapi = .*|android.minapi = 26|' buildozer.spec
+          
+          # Права
+          sed -i 's|^android.permissions = .*|android.permissions = |' buildozer.spec
+          
+          echo "=== Patched buildozer.spec ==="
+          cat buildozer.spec
+
+      # ── 11. Сборка APK ──
+      - name: Build APK
+        run: |
+          cd ${{ github.workspace }}
+          
+          # Удаляем .buildozer чтобы избежать кэширования
+          rm -rf .buildozer
+          
+          pyside6-android-deploy \
+            --wheel-pyside=${{ steps.wheels.outputs.pyside_wheel }} \
+            --wheel-shiboken=${{ steps.wheels.outputs.shiboken_wheel }} \
+            --name=main \
+            --ndk-path ~/pyside-setup/.pyside6_android_deploy/android-ndk/android-ndk-${{ env.NDK_VERSION }} \
+            --sdk-path ~/pyside-setup/.pyside6_android_deploy/android-sdk/
+        
+        timeout-minutes: 60
+
+      # ── 12. Загрузка APK как артефакт ──
+      - name: Find and upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: BrickEmuPy-android-${{ env.ARCH }}
+          path: |
+            **/*.apk
+            *.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      # ── 13. (Опционально) Релиз при теге ──
+      - name: Release APK on tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            **/*.apk
+            *.apk
+          draft: true

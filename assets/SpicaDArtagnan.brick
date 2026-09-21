@@ -1,0 +1,84 @@
+{
+	"id": "c5c6a926-8383-4940-8948-c96bec662fbf",
+	"credits": "ROM dump by Milan Galcik (https://www.septimus.sk/KB1013dbg/index.html)",
+	"core": "T7741",
+	"face_path": "./assets/SpicaDArtagnan.svg",
+	"clock": 170000,
+	
+	"buttons": {
+		"btnRight": {
+			"hot_keys": [68, 16777236]
+		},
+		"btnLeft": {
+			"hot_keys": [65, 16777234]
+		},
+		"btnDown": {
+			"hot_keys": [83, 16777237]
+		},
+		"btnJump": {
+			"hot_keys": [87, 16777235]
+		},
+		"btnStart": {
+			"hot_keys": [49, 32]
+		}
+	},
+
+	"display": {
+		"motion_blur": 0.6,
+		"ghost_segments": 0,
+		"shadow": 10
+	},
+
+	"peripherals": {
+		"matrix_input": {
+			"btnRight": {
+				"port": "INP",
+				"mask": 8,
+				"level": {
+					"port": "IOP",
+					"mask": 1
+				}
+			},
+			"btnLeft": {
+				"port": "INP",
+				"mask": 2,
+				"level": {
+					"port": "IOP",
+					"mask": 1
+				}
+			},
+			"btnDown": {
+				"port": "INP",
+				"mask": 4,
+				"level": {
+					"port": "IOP",
+					"mask": 1
+				}
+			},
+			"btnJump": {
+				"port": "INP",
+				"mask": 1,
+				"level": {
+					"port": "IOP",
+					"mask": 1
+				}
+			},
+			"btnStart": {
+				"port": "INP",
+				"mask": 1,
+				"level": {
+					"port": "IOP",
+					"mask": 2
+				}
+			}
+		}
+	},
+
+	"mask_options": {
+		"rom_path": "./assets/SpicaDArtagnan.bin",
+		"prescaler_div": [2, 8, 16],
+		"sub_clock": 170000,
+		"com_div": 768,
+		"sound_gnd": 0
+	}
+}

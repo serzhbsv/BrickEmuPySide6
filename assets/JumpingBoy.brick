@@ -1,0 +1,83 @@
+{
+	"id": "2a328592-5dcd-4e83-9dde-6abd22ba8f61",
+	"credits": "ROM dump by Milan Galcik (https://www.septimus.sk/KB1013dbg/index.html)",
+	"core": "T7741",
+	"face_path": "./assets/JumpingBoy.svg",
+	"clock": 188000,
+	
+	"buttons": {
+		"btnGameA": {
+			"hot_keys": [65, 16777234, 83, 16777237]
+		},
+		"btnGameB": {
+			"hot_keys": [68, 16777236, 87, 16777235]
+		},
+		"btnTime": {
+			"hot_keys": [84]
+		},
+		"btnAlarm": {
+			"hot_keys": [65]
+		},
+		"btnACL": {
+			"hot_keys": [82]
+		}
+	},
+
+	"display": {
+		"motion_blur": 0.6,
+		"ghost_segments": 0,
+		"shadow": 8
+	},
+
+	"peripherals": {
+		"matrix_input": {
+			"btnGameA": {
+				"port": "INP",
+				"mask": 1,
+				"level": {
+					"port": "OUTP",
+					"mask": 1
+				}
+			},
+			"btnGameB": {
+				"port": "INP",
+				"mask": 2,
+				"level": {
+					"port": "OUTP",
+					"mask": 1
+				}
+			},
+			"btnTime": {
+				"port": "INP",
+				"mask": 4,
+				"level": {
+					"port": "OUTP",
+					"mask": 1
+				}
+			},
+			"btnAlarm": {
+				"port": "INP",
+				"mask": 8,
+				"level": {
+					"port": "OUTP",
+					"mask": 1
+				}
+			}
+		},
+		"direct_input": {
+			"btnACL": {
+				"port": "RES",
+				"mask": 0,
+				"level": 1
+			}
+		}
+	},
+
+	"mask_options": {
+		"rom_path": "./assets/JumpingBoy.bin",
+		"prescaler_div": [2, 8, 32],
+		"sub_clock": 32768,
+		"com_div": 768,
+		"sound_gnd": 0
+	}
+}

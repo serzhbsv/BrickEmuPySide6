@@ -1,0 +1,53 @@
+{
+	"id": "d3350175-5103-4bed-ab70-db69de633ac6",
+	"credits": "Device for reverse engineering provided by t.me/oksiniah.",
+	"core": "SPLB20",
+	"face_path": "./assets/Gyaoppi9in1.svg",
+	"clock": 1100000,
+	
+	"buttons": {
+		"btnA": {
+			"hot_keys": [49]
+		},
+		"btnB": {
+			"hot_keys": [50]
+		},
+		"btnC": {
+			"hot_keys": [51]
+		}
+	},
+
+	"display": {
+		"motion_blur": 0.6,
+		"ghost_segments": 0.02,
+		"shadow": 20
+	},
+
+	"peripherals": {
+		"direct_input": {
+			"btnA": {
+				"port": "PA",
+				"mask": 2,
+				"level": 0
+			},
+			"btnB": {
+				"port": "PA",
+				"mask": 4,
+				"level": 0
+			},
+			"btnC": {
+				"port": "PA",
+				"mask": 8,
+				"level": 0
+			}
+		}
+	},
+
+	"mask_options": {
+		"rom_path": "./assets/Gyaoppi9in1.bin",
+		"non_crystal_mode": 0,
+		"port_pullup": {
+			"PA": 255
+		}
+	}
+}

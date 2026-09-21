@@ -1,0 +1,104 @@
+{
+	"id": "44fac13e-0043-4042-a894-e23ccef690f0",
+	"core": "T7741",
+	"face_path": "./assets/DorayakiHouse.svg",
+	"clock": 195000,
+	
+	"buttons": {
+		"btnDown": {
+			"hot_keys": [83, 16777237]
+		},
+		"btnLeft": {
+			"hot_keys": [65, 16777234]
+		},
+		"btnRight": {
+			"hot_keys": [68, 16777236]
+		},
+		"btnJump": {
+			"hot_keys": [87, 16777235]
+		},
+		"btnMode": {
+			"hot_keys": [49, 77]
+		},
+		"btnAction": {
+			"hot_keys": [50, 32]
+		},
+		"btnACL": {
+			"hot_keys": [82]
+		}
+	},
+
+	"display": {
+		"motion_blur": 0.6,
+		"ghost_segments": 0,
+		"shadow": 18
+	},
+
+	"peripherals": {
+		"matrix_input": {
+			"btnDown": {
+				"port": "INP",
+				"mask": 8,
+				"level": {
+					"port": "OUTP",
+					"mask": 2
+				}
+			},
+			"btnLeft": {
+				"port": "INP",
+				"mask": 4,
+				"level": {
+					"port": "OUTP",
+					"mask": 2
+				}
+			},
+			"btnRight": {
+				"port": "INP",
+				"mask": 1,
+				"level": {
+					"port": "OUTP",
+					"mask": 2
+				}
+			},
+			"btnJump": {
+				"port": "INP",
+				"mask": 2,
+				"level": {
+					"port": "OUTP",
+					"mask": 2
+				}
+			},
+			"btnMode": {
+				"port": "INP",
+				"mask": 1,
+				"level": {
+					"port": "OUTP",
+					"mask": 1
+				}
+			},
+			"btnAction": {
+				"port": "INP",
+				"mask": 8,
+				"level": {
+					"port": "OUTP",
+					"mask": 1
+				}
+			}
+		},
+		"direct_input": {
+			"btnACL": {
+				"port": "RES",
+				"mask": 0,
+				"level": 1
+			}
+		}
+	},
+	
+	"mask_options": {
+		"rom_path": "./assets/DorayakiHouse.bin",
+		"prescaler_div": [2, 8, 16],
+		"sub_clock": 32768,
+		"com_div": 768,
+		"sound_gnd": 0
+	}
+}

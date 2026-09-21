@@ -1,0 +1,64 @@
+from .KS57dasm import KS57dasm
+
+class KS57C2504dasm(KS57dasm):
+
+    def __init__(self, roots=None):
+        super().__init__()
+
+        self._clr_fmem_tbl = {
+            0b10110010: "di",
+            0b10011000: "di IEBT",
+            0b10111000: "di IE4",
+            0b10011010: "di IEW",
+            0b10011011: "di IEK",
+            0b10011100: "di IET0",
+            0b10011101: "di IES",
+            0b10011110: "di IE0",
+            0b10111110: "di IE1",
+            0b10011111: "di IE2"
+        }
+
+        self._set_fmem_tbl = {
+            0b10110010: "ei",
+            0b10100011: "idle",
+            0b10110011: "stop",
+            0b10011000: "ei IEBT",
+            0b10111000: "ei IE4",
+            0b10011010: "ei IEW",
+            0b10011011: "ei IEK",
+            0b10011100: "ei IET0",
+            0b10011101: "ei IES",
+            0b10011110: "ei IE0",
+            0b10111110: "ei IE1",
+            0b10011111: "ei IE2"
+        }
+
+    def disassemble(self, rom):
+        if (rom.size() > 0):
+            listing = [None] * rom.size()
+            vector = rom.get_word(0) & 0x3FFF
+            listing = self._disassemble(vector, listing, rom)
+            vector = rom.get_word(2) & 0x3FFF
+            listing = self._disassemble(vector, listing, rom)
+            vector = rom.get_word(4) & 0x3FFF
+            listing = self._disassemble(vector, listing, rom)
+            vector = rom.get_word(6) & 0x3FFF
+            listing = self._disassemble(vector, listing, rom)
+            vector = rom.get_word(8) & 0x3FFF
+            listing = self._disassemble(vector, listing, rom)
+            vector = rom.get_word(10) & 0x3FFF
+            listing = self._disassemble(vector, listing, rom)
+            vector = rom.get_word(12) & 0x3FFF
+            listing = self._disassemble(vector, listing, rom)
+
+            listing = self._disassemble_pcea(listing, rom)
+
+            for i in range(len(listing)):
+                if (listing[i] is None):
+                    byte = rom.get_byte(i)
+                    listing[i] = (1, byte, 'db ' + self._bytebase % byte)
+                listing[i] = (self._opbase % listing[i][1], listing[i][2])
+            
+            return {"LISTING": tuple(listing)}
+        else:
+            return {}

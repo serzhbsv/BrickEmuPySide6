@@ -1,0 +1,93 @@
+{
+	"id": "424b36d8-0bbd-4193-a40f-0283aa0ecda9",
+	"core": "T7741",
+	"face_path": "./assets/Pengo.svg",
+	"clock": 190000,
+	
+	"buttons": {
+		"btnLeft": {
+			"hot_keys": [65, 16777234]
+		},
+		"btnRight": {
+			"hot_keys": [68, 16777236]
+		},
+		"btnUp": {
+			"hot_keys": [87, 16777235]
+		},
+		"btnDown": {
+			"hot_keys": [83, 16777237]
+		},
+		"btnStart": {
+			"hot_keys": [49, 32]
+		},
+		"btnReset": {
+			"hot_keys": [82]
+		}
+	},
+
+	"display": {
+		"motion_blur": 0.6,
+		"ghost_segments": 0,
+		"shadow": 20
+	},
+
+	"peripherals": {
+		"matrix_input": {
+			"btnLeft": {
+				"port": "INP",
+				"mask": 8,
+				"level": {
+					"port": "OUTP",
+					"mask": 2
+				}
+			},
+			"btnRight": {
+				"port": "INP",
+				"mask": 2,
+				"level": {
+					"port": "OUTP",
+					"mask": 2
+				}
+			},
+			"btnUp": {
+				"port": "INP",
+				"mask": 1,
+				"level": {
+					"port": "OUTP",
+					"mask": 2
+				}
+			},
+			"btnDown": {
+				"port": "INP",
+				"mask": 4,
+				"level": {
+					"port": "OUTP",
+					"mask": 2
+				}
+			},
+			"btnStart": {
+				"port": "IOP",
+				"mask": 1,
+				"level": {
+					"port": "OUTP",
+					"mask": 2
+				}
+			}
+		},
+		"direct_input": {
+			"btnReset": {
+				"port": "RES",
+				"mask": 0,
+				"level": 1
+			}
+		}
+	},
+
+	"mask_options": {
+		"rom_path": "./assets/Pengo.bin",
+		"prescaler_div": [2, 8, 32],
+		"sub_clock": 32768,
+		"com_div": 768,
+		"sound_gnd": 1
+	}
+}

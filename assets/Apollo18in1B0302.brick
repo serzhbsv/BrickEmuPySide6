@@ -1,0 +1,95 @@
+{
+	"id": "d03fc387-09ae-4444-b2cc-e1168ed171b4",
+	"core": "SPL03",
+	"face_path": "./assets/Apollo18in1B0302.svg",
+	"clock": 690000,
+	
+	"buttons": {
+		"btnOnOff": {
+			"hot_keys": [50, 16777216]
+		},
+		"btnMute": {
+			"hot_keys": [51]
+		},
+		"btnStartP": {
+			"hot_keys": [49, 16777221]
+		},
+		"btnReset": {
+			"hot_keys": [82]
+		},
+		"btnLeft": {
+			"hot_keys": [65, 16777234]
+		},
+		"btnRight": {
+			"hot_keys": [68, 16777236]
+		},
+		"btnDown": {
+			"hot_keys": [83, 16777237]
+		},
+		"btnRotate": {
+			"hot_keys": [87, 32, 16777235]
+		}
+	},
+
+	"display": {
+		"motion_blur": 0.6,
+		"ghost_segments": 0.02,
+		"shadow": 8
+	},
+
+	"peripherals": {
+		"direct_input": {
+			"btnOnOff": {
+				"port": "PA",
+				"mask": 1,
+				"level": 1
+			},
+			"btnMute": {
+				"port": "PA",
+				"mask": 32,
+				"level": 1
+			},
+			"btnStartP": {
+				"port": "PA",
+				"mask": 64,
+				"level": 1
+			},
+			"btnReset": {
+				"port": "RES",
+				"mask": 0,
+				"level": 0
+			},
+			"btnLeft": {
+				"port": "PA",
+				"mask": 8,
+				"level": 1
+			},
+			"btnRight": {
+				"port": "PA",
+				"mask": 16,
+				"level": 1
+			},
+			"btnDown": {
+				"port": "PA",
+				"mask": 4,
+				"level": 1
+			},
+			"btnRotate": {
+				"port": "PA",
+				"mask": 2,
+				"level": 1
+			}
+		}
+	},
+
+	"mask_options": {
+		"rom_path": "./assets/Apollo18in1B0302.bin",
+		"non_crystal_div": 16,
+		"port_pullup": {
+			"PA": 0
+		},
+		"port_pkey": {
+			"PA": 1
+		}
+	}
+}

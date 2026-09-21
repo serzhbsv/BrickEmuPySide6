@@ -1,0 +1,105 @@
+{
+	"id": "e581c559-a03c-4fb6-805a-568527ac1bca",
+	"credits": "ROM dump and photos for tracing courtesy of Milan Galcik. Game donated by MikeG.",
+	"core": "T7741",
+	"face_path": "./assets/AnimestSpaceCobra.svg",
+	"clock": 200000,
+	
+	"buttons": {
+		"btnMode": {
+			"hot_keys": [50, 77]
+		},
+		"btnFire": {
+			"hot_keys": [32]
+		},
+		"btnLeftDown": {
+			"hot_keys": [83, 16777237, 65, 16777234]
+		},
+		"btnGame": {
+			"hot_keys": [49]
+		},
+		"btnRightUp": {
+			"hot_keys": [68, 16777236, 87, 16777235]
+		},
+		"btnAlarm": {
+			"hot_keys": [51]
+		},
+		"btnACL": {
+			"hot_keys": [52, 82]
+		}
+	},
+
+	"display": {
+		"motion_blur": 0.6,
+		"ghost_segments": 0,
+		"shadow": 4
+	},
+	
+	"peripherals": {
+		"matrix_input": {
+			"btnMode": {
+				"port": "INP",
+				"mask": 1,
+				"level": {
+					"port": "OUTP",
+					"mask": 2
+				}
+			},
+			"btnFire": {
+				"port": "INP",
+				"mask": 1,
+				"level": {
+					"port": "OUTP",
+					"mask": 1
+				}
+			},
+			"btnLeftDown": {
+				"port": "INP",
+				"mask": 2,
+				"level": {
+					"port": "OUTP",
+					"mask": 1
+				}
+			},
+			"btnGame": {
+				"port": "INP",
+				"mask": 2,
+				"level": {
+					"port": "OUTP",
+					"mask": 2
+				}
+			},
+			"btnRightUp": {
+				"port": "INP",
+				"mask": 4,
+				"level": {
+					"port": "OUTP",
+					"mask": 1
+				}
+			},
+			"btnAlarm": {
+				"port": "INP",
+				"mask": 4,
+				"level": {
+					"port": "OUTP",
+					"mask": 2
+				}
+			}
+		},
+		"direct_input": {
+			"btnACL": {
+				"port": "RES",
+				"mask": 0,
+				"level": 1
+			}
+		}
+	},
+
+	"mask_options": {
+		"rom_path": "./assets/AnimestSpaceCobra.bin",
+		"prescaler_div": [2, 8, 32],
+		"sub_clock": 32768,
+		"com_div": 768,
+		"sound_gnd": 0
+	}
+}

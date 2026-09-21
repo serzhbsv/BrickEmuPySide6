@@ -1,0 +1,108 @@
+{
+	"id": "69850543-fd12-4546-a5f2-94d1704e7b1c",
+	"core": "M37520",
+	"face_path": "./assets/PocketPikachu.svg",
+	"clock": 4000000,
+	
+	"buttons": {
+		"btnA": {
+			"hot_keys": [32, 88]
+		},
+		"btnB": {
+			"hot_keys": [90]
+		},
+		"btnStart": {
+			"hot_keys": [50, 16777220]
+		},
+		"btnSelect": {
+			"hot_keys": [49]
+		},
+		"btnLeft": {
+			"hot_keys": [65, 16777234]
+		},
+		"btnUp": {
+			"hot_keys": [87, 16777235]
+		},
+		"btnRight": {
+			"hot_keys": [68, 16777236]
+		},
+		"btnDown": {
+			"hot_keys": [83, 16777237]
+		},
+		"btnReset": {
+			"hot_keys": [82]
+		},
+		"reflector": {
+			"hot_keys": [51]	
+		}
+	},
+
+	"display": {
+		"motion_blur": 0.6,
+		"ghost_segments": 0.1,
+		"shadow": 6
+	},
+
+	"peripherals": {
+		"direct_input": {
+			"btnA": {
+				"port": "P2",
+				"mask": 1,
+				"level": 0
+			},
+			"btnB": {
+				"port": "P2",
+				"mask": 2,
+				"level": 0
+			},
+			"btnStart": {
+				"port": "P2",
+				"mask": 4,
+				"level": 0
+			},
+			"btnSelect": {
+				"port": "P2",
+				"mask": 8,
+				"level": 0
+			},
+			"btnLeft": {
+				"port": "P2",
+				"mask": 128,
+				"level": 0
+			},
+			"btnUp": {
+				"port": "P2",
+				"mask": 64,
+				"level": 0
+			},
+			"btnRight": {
+				"port": "P2",
+				"mask": 32,
+				"level": 0
+			},
+			"btnDown": {
+				"port": "P2",
+				"mask": 16,
+				"level": 0
+			},
+			"btnReset": {
+				"port": "RES",
+				"mask": 0,
+				"level": 0
+			},
+			"reflector": {
+				"port": "P4",
+				"mask": 1,
+				"level": 0
+			}
+		}
+	},
+
+	"mask_options": {
+		"rom_path": "./assets/PocketPikachu.bin",
+		"port_pullup": {
+			"P3": 144,
+			"P4": 43
+		}
+	}
+}
