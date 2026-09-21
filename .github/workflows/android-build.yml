@@ -73,14 +73,9 @@ jobs:
       - name: Download PySide6 Android wheels
         run: |
           mkdir -p ~/wheels
-          pip download PySide6==${{ env.QT_VERSION }} \
-            --platform android_${{ env.ARCH }} \
-            --only-binary=:all: \
-            -d ~/wheels
-          pip download shiboken6==${{ env.QT_VERSION }} \
-            --platform android_${{ env.ARCH }} \
-            --only-binary=:all: \
-            -d ~/wheels
+          pip install qtpip
+          qtpip download PySide6==6.8.3 --android --arch aarch64 -d ~/wheels
+          qtpip download shiboken6==6.8.3 --android --arch aarch64 -d ~/wheels
           echo "Wheels downloaded:"
           ls -la ~/wheels/
 
