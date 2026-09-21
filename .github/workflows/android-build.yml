@@ -27,14 +27,8 @@ jobs:
       - name: Install build dependencies
         run: |
           python -m pip install --upgrade pip
-          # PySide6 содержит pyside6-android-deploy
           pip install PySide6==${{ env.QT_VERSION }}
-          # buildozer нужен pyside6-android-deploy под капотом
-          pip install buildozer
-          # qtpip для скачивания Android-колес
-          pip install qtpip
-          # cython нужен buildozer
-          pip install cython
+          pip install buildozer cython qtpip
 
       - name: Prepare wheels directory
         run: mkdir -p ${{ env.WHEELS_DIR }}
@@ -54,11 +48,11 @@ jobs:
       - name: Build APK
         run: |
           pyside6-android-deploy \
+            -c pysidedeploy.spec \
+            -f \
             --wheel-pyside=${{ env.WHEELS_DIR }}/PySide6-${{ env.QT_VERSION }}-cp311-cp311-android_aarch64.whl \
             --wheel-shiboken=${{ env.WHEELS_DIR }}/shiboken6-${{ env.QT_VERSION }}-cp311-cp311-android_aarch64.whl \
-            --project-path=. \
-            --spec-file=pysidedeploy.spec \
-            --force
+            --name=BrickEmu
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
