@@ -1,4 +1,4 @@
-name: Build Android APK (PySide6 - Rock Solid)
+name: Build Android APK (PySide6)
 
 on:
   push:
@@ -11,11 +11,8 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      # Версия Python для самого раннера (для установки pip-пакетов)
-      # Мы ставим 3.11, чтобы избежать проблем с совместимостью скриптов
       QT_VERSION: "6.8.3"
       WHEELS_DIR: "./wheels"
-      # ГЛАВНАЯ ПЕРЕМЕННАЯ: заставляет python-for-android собрать именно 3.11.13
       P4A_BUILD_PYTHON_VERSION: "3.11.13"
 
     steps:
@@ -23,7 +20,6 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Python 3.11
-        # ИСПРАВЛЕНИЕ: Версия прописана явно, без переменных, чтобы исключить ошибки парсинга
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -42,43 +38,37 @@ jobs:
       - name: Install build dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install PySide6==\${{ env.QT_VERSION }} buildozer cython jinja2
+          pip install PySide6==${{ env.QT_VERSION }} buildozer cython jinja2
 
       - name: Setup Android SDK paths
         run: |
-          # Определяем пути
           export ANDROID_SDK_ROOT="/usr/local/lib/android/sdk"
-          export ANDROID_NDK_HOME=\$(ls -d /usr/local/lib/android/sdk/ndk/* | head -1)
+          export ANDROID_NDK_HOME=$(ls -d /usr/local/lib/android/sdk/ndk/* | head -1)
 
-          # Экспортируем их в среду GitHub Actions для следующих шагов
           echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
           echo "ANDROID_NDK_HOME=$ANDROID_NDK_HOME" >> $GITHUB_ENV
 
-          # Создаем симлинк для обратной совместимости, если нужно
-          mkdir -p \$ANDROID_SDK_ROOT/tools/bin
-          if [ -f "\$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" ]; then
-            ln -sf "\$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" \
-                   "\$ANDROID_SDK_ROOT/tools/bin/sdkmanager"
+          mkdir -p "$ANDROID_SDK_ROOT/tools/bin"
+          if [ -f "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" ]; then
+            ln -sf "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" "$ANDROID_SDK_ROOT/tools/bin/sdkmanager"
           fi
 
-          # Принимаем лицензии и скачиваем инструменты
-          yes | \$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
-          \$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager \
-            "platform-tools" "build-tools;34.0.0" "platforms;android-34" > /dev/null 2>&1 || true
+          yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
+          "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "build-tools;34.0.0" "platforms;android-34" > /dev/null 2>&1 || true
 
       - name: Download Android wheels from Qt mirror
         run: |
-          mkdir -p \${{ env.WHEELS_DIR }}
+          mkdir -p ${{ env.WHEELS_DIR }}
 
-          curl -L -o \${{ env.WHEELS_DIR }}/PySide6-6.8.3-6.8.3-cp311-cp311-android_aarch64.whl \
+          curl -L -o ${{ env.WHEELS_DIR }}/PySide6-6.8.3-6.8.3-cp311-cp311-android_aarch64.whl \
             "https://mirror.yandex.ru/mirrors/qt.io/official_releases/QtForPython/pyside6/PySide6-6.8.3-6.8.3-cp311-cp311-android_aarch64.whl"
 
-          curl -L -o \${{ env.WHEELS_DIR }}/shiboken6-6.8.3-6.8.3-cp311-cp311-android_aarch64.whl \
+          curl -L -o ${{ env.WHEELS_DIR }}/shiboken6-6.8.3-6.8.3-cp311-cp311-android_aarch64.whl \
             "https://mirror.yandex.ru/mirrors/qt.io/official_releases/QtForPython/shiboken6/shiboken6-6.8.3-6.8.3-cp311-cp311-android_aarch64.whl"
 
-          ls -lh \${{ env.WHEELS_DIR }}/
+          ls -lh ${{ env.WHEELS_DIR }}/
 
-      - name: Generate buildozer.spec (dry run)
+      - name: Generate buildozer spec (dry run)
         run: |
           PYSIDE_WHEEL=$(find ${{ env.WHEELS_DIR }} -name "PySide6*.whl" | head -1)
           SHIBOKEN_WHEEL=$(find ${{ env.WHEELS_DIR }} -name "shiboken6*.whl" | head -1)
@@ -88,8 +78,8 @@ jobs:
             -c pysidedeploy.spec \
             --dry-run \
             -f \
-            --wheel-pyside="\$PYSIDE_WHEEL" \
-            --wheel-shiboken="\$SHIBOKEN_WHEEL" \
+            --wheel-pyside="$PYSIDE_WHEEL" \
+            --wheel-shiboken="$SHIBOKEN_WHEEL" \
             --name=BrickEmu
 
       - name: Force Python 3.11 in buildozer.spec
@@ -99,23 +89,18 @@ jobs:
             exit 1
           fi
 
-          echo "Patching buildozer.spec..."
-          
-          # 1. Устанавливаем версию Python жестко
           if grep -q "^python.version" buildozer.spec; then
             sed -i 's/^python.version=.*/python.version = 3.11.13/' buildozer.spec
           else
             echo "python.version = 3.11.13" >> buildozer.spec
           fi
 
-          # 2. Устанавливаем requirements
           if grep -q "^requirements" buildozer.spec; then
             sed -i 's/^requirements=.*/requirements = python3,shiboken6,PySide6/' buildozer.spec
           else
             echo "requirements = python3,shiboken6,PySide6" >> buildozer.spec
           fi
 
-          # 3. Удаляем p4a.commit, чтобы он не конфликтовал с P4A_BUILD_PYTHON_VERSION
           sed -i '/^p4a.commit/d' buildozer.spec
 
           echo "=== Final buildozer.spec settings ==="
@@ -123,7 +108,7 @@ jobs:
 
       - name: Build APK
         run: |
-          echo "Starting build with P4A_BUILD_PYTHON_VERSION=\$P4A_BUILD_PYTHON_VERSION"
+          echo "Starting build with P4A_BUILD_PYTHON_VERSION=$P4A_BUILD_PYTHON_VERSION"
           python -m buildozer android debug
 
       - name: Upload APK Artifact
