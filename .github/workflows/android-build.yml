@@ -14,7 +14,6 @@ jobs:
       PYTHON_VERSION: "3.11"
       QT_VERSION: "6.8.3"
       WHEELS_DIR: "./wheels"
-      NDK_VERSION: "r27c"
 
     steps:
       - name: Checkout repository
@@ -31,28 +30,31 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Install system dependencies for libffi build
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libltdl-dev libtool autoconf automake pkg-config
+
       - name: Install build dependencies
         run: |
           python -m pip install --upgrade pip
           pip install PySide6==${{ env.QT_VERSION }} buildozer cython jinja2
 
-      - name: Setup Android SDK and NDK
+      - name: Setup Android SDK paths for buildozer
         run: |
-          # Используем предустановленный SDK с раннера
+          # Раннер уже имеет SDK и NDK — используем их
           export ANDROID_SDK_ROOT="/usr/local/lib/android/sdk"
-          export ANDROID_NDK_HOME="$ANDROID_SDK_ROOT/ndk/27.2.12479018"
+          export ANDROID_NDK_HOME=$(ls -d /usr/local/lib/android/sdk/ndk/* | head -1)
           
-          # Проверяем, что SDK существует
-          ls -la $ANDROID_SDK_ROOT/cmdline-tools/
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=$ANDROID_NDK_HOME" >> $GITHUB_ENV
           
-          # Устанавливаем нужную версию NDK через sdkmanager
-          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager \
-            "ndk;27.2.12479018" > /dev/null 2>&1 || true
-          
-          # Создаём symlink для buildozer (он ищет tools/bin/sdkmanager)
+          # Symlink для buildozer (он ищет tools/bin/sdkmanager)
           mkdir -p $ANDROID_SDK_ROOT/tools/bin
-          ln -sf $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager \
-                 $ANDROID_SDK_ROOT/tools/bin/sdkmanager
+          if [ -f "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" ]; then
+            ln -sf "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" \
+                   "$ANDROID_SDK_ROOT/tools/bin/sdkmanager"
+          fi
           
           # Принимаем лицензии
           yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
@@ -63,13 +65,8 @@ jobs:
             "build-tools;34.0.0" \
             "platforms;android-34" > /dev/null 2>&1 || true
           
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
-          echo "ANDROID_NDK_HOME=$ANDROID_NDK_HOME" >> $GITHUB_ENV
-          
-          echo "=== SDK structure ==="
-          ls -la $ANDROID_SDK_ROOT/tools/bin/
           echo "=== NDK ==="
-          ls -la $ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readobj
+          ls $ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readobj
 
       - name: Download Android wheels from Qt mirror
         run: |
