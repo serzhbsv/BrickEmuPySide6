@@ -35,23 +35,31 @@ jobs:
 
       - name: Download PySide6 and Shiboken6 Android wheels
         run: |
-          qtpip download \
-            --platform android_aarch64 \
-            --python-version ${{ env.PYTHON_VERSION }} \
-            --dest ${{ env.WHEELS_DIR }} \
-            PySide6==${{ env.QT_VERSION }} \
-            shiboken6==${{ env.QT_VERSION }}
+          qtpip download PySide6 --android --arch aarch64 --dest ${{ env.WHEELS_DIR }}
+          qtpip download shiboken6 --android --arch aarch64 --dest ${{ env.WHEELS_DIR }}
 
       - name: Verify downloaded wheels
         run: ls -lh ${{ env.WHEELS_DIR }}
 
       - name: Build APK
         run: |
+          # Находим скачанные колёса автоматически
+          PYSIDE_WHEEL=$(find ${{ env.WHEELS_DIR }} -name "PySide6*.whl" | head -1)
+          SHIBOKEN_WHEEL=$(find ${{ env.WHEELS_DIR }} -name "shiboken6*.whl" | head -1)
+          
+          echo "PySide6 wheel: $PYSIDE_WHEEL"
+          echo "Shiboken6 wheel: $SHIBOKEN_WHEEL"
+          
+          if [ -z "$PYSIDE_WHEEL" ] || [ -z "$SHIBOKEN_WHEEL" ]; then
+            echo "ERROR: Wheels not found!"
+            exit 1
+          fi
+          
           pyside6-android-deploy \
             -c pysidedeploy.spec \
             -f \
-            --wheel-pyside=${{ env.WHEELS_DIR }}/PySide6-${{ env.QT_VERSION }}-cp311-cp311-android_aarch64.whl \
-            --wheel-shiboken=${{ env.WHEELS_DIR }}/shiboken6-${{ env.QT_VERSION }}-cp311-cp311-android_aarch64.whl \
+            --wheel-pyside="$PYSIDE_WHEEL" \
+            --wheel-shiboken="$SHIBOKEN_WHEEL" \
             --name=BrickEmu
 
       - name: Upload APK Artifact
