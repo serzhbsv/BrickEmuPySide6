@@ -28,22 +28,25 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install PySide6==${{ env.QT_VERSION }}
-          pip install buildozer cython qtpip
+          pip install buildozer cython
 
-      - name: Prepare wheels directory
-        run: mkdir -p ${{ env.WHEELS_DIR }}
-
-      - name: Download PySide6 and Shiboken6 Android wheels
+      - name: Download Android wheels from Qt mirror
         run: |
-          qtpip download PySide6 --android --arch aarch64 --dest ${{ env.WHEELS_DIR }}
-          qtpip download shiboken6 --android --arch aarch64 --dest ${{ env.WHEELS_DIR }}
-
-      - name: Verify downloaded wheels
-        run: ls -lh ${{ env.WHEELS_DIR }}
+          mkdir -p ${{ env.WHEELS_DIR }}
+          
+          # PySide6 — в папке pyside6/
+          curl -L -o ${{ env.WHEELS_DIR }}/PySide6-6.8.3-6.8.3-cp311-cp311-android_aarch64.whl \
+            "https://mirror.yandex.ru/mirrors/qt.io/official_releases/QtForPython/pyside6/PySide6-6.8.3-6.8.3-cp311-cp311-android_aarch64.whl"
+          
+          # shiboken6 — в отдельной папке shiboken6/
+          curl -L -o ${{ env.WHEELS_DIR }}/shiboken6-6.8.3-6.8.3-cp311-cp311-android_aarch64.whl \
+            "https://mirror.yandex.ru/mirrors/qt.io/official_releases/QtForPython/shiboken6/shiboken6-6.8.3-6.8.3-cp311-cp311-android_aarch64.whl"
+          
+          echo "=== Downloaded wheels ==="
+          ls -lh ${{ env.WHEELS_DIR }}/
 
       - name: Build APK
         run: |
-          # Находим скачанные колёса автоматически
           PYSIDE_WHEEL=$(find ${{ env.WHEELS_DIR }} -name "PySide6*.whl" | head -1)
           SHIBOKEN_WHEEL=$(find ${{ env.WHEELS_DIR }} -name "shiboken6*.whl" | head -1)
           
