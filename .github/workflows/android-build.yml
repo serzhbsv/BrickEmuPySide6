@@ -68,51 +68,38 @@ jobs:
 
           ls -lh ${{ env.WHEELS_DIR }}/
 
-      - name: Generate buildozer spec (dry run)
+                - name: Patch pysidedeploy.spec for Python 3.11
+          run: |
+          if [ ! -f "pysidedeploy.spec" ]; then
+            echo "ERROR: pysidedeploy.spec not found!"
+            exit 1
+          fi
+
+          # Удаляем секцию [buildozer], если она есть
+          sed -i '/^\[buildozer\]$/,/^\[/d' pysidedeploy.spec 2>/dev/null || true
+
+          # Добавляем секцию заново одной строкой через printf (это 100% безопасно для YAML)
+          printf "[buildozer]\npython.version = 3.11.13\nrequirements = python3,shiboken6,PySide6\np4a.commit = 3762c88c56e3443efb8eba2a02a2604b680240fd\n" >> pysidedeploy.spec
+
+          echo "=== Patched pysidedeploy.spec ==="
+          cat pysidedeploy.spec
+
+      - name: Build APK
         run: |
           PYSIDE_WHEEL=$(find ${{ env.WHEELS_DIR }} -name "PySide6*.whl" | head -1)
           SHIBOKEN_WHEEL=$(find ${{ env.WHEELS_DIR }} -name "shiboken6*.whl" | head -1)
 
-          echo "Generating buildozer.spec..."
+          echo "PySide6 wheel: $PYSIDE_WHEEL"
+          echo "Shiboken6 wheel: $SHIBOKEN_WHEEL"
+
           pyside6-android-deploy \
             -c pysidedeploy.spec \
-            --dry-run \
             -f \
             --wheel-pyside="$PYSIDE_WHEEL" \
             --wheel-shiboken="$SHIBOKEN_WHEEL" \
             --ndk-path="$ANDROID_NDK_HOME" \
             --sdk-path="$ANDROID_SDK_ROOT" \
             --name=BrickEmu
-
-
-      - name: Force Python 3.11 in buildozer.spec
-        run: |
-          if [ ! -f "buildozer.spec" ]; then
-            echo "ERROR: buildozer.spec was not generated!"
-            exit 1
-          fi
-
-          if grep -q "^python.version" buildozer.spec; then
-            sed -i 's/^python.version=.*/python.version = 3.11.13/' buildozer.spec
-          else
-            echo "python.version = 3.11.13" >> buildozer.spec
-          fi
-
-          if grep -q "^requirements" buildozer.spec; then
-            sed -i 's/^requirements=.*/requirements = python3,shiboken6,PySide6/' buildozer.spec
-          else
-            echo "requirements = python3,shiboken6,PySide6" >> buildozer.spec
-          fi
-
-          sed -i '/^p4a.commit/d' buildozer.spec
-
-          echo "=== Final buildozer.spec settings ==="
-          grep -E "^(python.version|requirements)" buildozer.spec
-
-      - name: Build APK
-        run: |
-          echo "Starting build with P4A_BUILD_PYTHON_VERSION=$P4A_BUILD_PYTHON_VERSION"
-          python -m buildozer android debug
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
