@@ -15,7 +15,7 @@ jobs:
       QT_VERSION: "6.8.3"
       WHEELS_DIR: "./wheels"
       NDK_VERSION: "r27c"
-      ANDROID_NDK_HOME: "${{ github.workspace }}/android-ndk-${{ env.NDK_VERSION }}"
+      ANDROID_NDK_HOME: "${{ github.workspace }}/android-ndk-r27c"
       ANDROID_SDK_ROOT: "${{ github.workspace }}/android-sdk"
 
     steps:
