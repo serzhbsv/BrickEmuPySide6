@@ -80,7 +80,10 @@ jobs:
             -f \
             --wheel-pyside="$PYSIDE_WHEEL" \
             --wheel-shiboken="$SHIBOKEN_WHEEL" \
+            --ndk-path="$ANDROID_NDK_HOME" \
+            --sdk-path="$ANDROID_SDK_ROOT" \
             --name=BrickEmu
+
 
       - name: Force Python 3.11 in buildozer.spec
         run: |
