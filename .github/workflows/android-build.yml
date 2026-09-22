@@ -68,21 +68,25 @@ jobs:
 
           ls -lh ${{ env.WHEELS_DIR }}/
 
-                - name: Patch pysidedeploy.spec for Python 3.11
-          run: |
+      - name: Patch pysidedeploy.spec for Python 3.11
+        run: |
           if [ ! -f "pysidedeploy.spec" ]; then
             echo "ERROR: pysidedeploy.spec not found!"
             exit 1
           fi
 
-          # Удаляем секцию [buildozer], если она есть
+          # Удаляем секцию [buildozer] целиком (все строки от [buildozer] до следующей [ или конца файла)
           sed -i '/^\[buildozer\]$/,/^\[/d' pysidedeploy.spec 2>/dev/null || true
 
-          # Добавляем секцию заново одной строкой через printf (это 100% безопасно для YAML)
-          printf "[buildozer]\npython.version = 3.11.13\nrequirements = python3,shiboken6,PySide6\np4a.commit = 3762c88c56e3443efb8eba2a02a2604b680240fd\n" >> pysidedeploy.spec
+          # Дописываем секцию построчно через echo — это самый надёжный способ
+          echo "[buildozer]" >> pysidedeploy.spec
+          echo "python.version = 3.11.13" >> pysidedeploy.spec
+          echo "requirements = python3,shiboken6,PySide6" >> pysidedeploy.spec
+          echo "p4a.commit = 3762c88c56e3443efb8eba2a02a2604b680240fd" >> pysidedeploy.spec
 
           echo "=== Patched pysidedeploy.spec ==="
           cat pysidedeploy.spec
+
 
       - name: Build APK
         run: |
