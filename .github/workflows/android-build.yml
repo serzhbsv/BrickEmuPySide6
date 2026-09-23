@@ -152,6 +152,14 @@ jobs:
 
           ls -lh ${{ env.WHEELS_DIR }}/
 
+      - name: Cache buildozer build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ./.buildozer
+            ~/buildozer
+          key: buildozer-${{ runner.os }}-py311-v1
+
       - name: Build APK
         run: |
           PYSIDE_WHEEL=$(find ${{ env.WHEELS_DIR }} -name "PySide6*.whl" | head -1)
@@ -168,6 +176,7 @@ jobs:
             --ndk-path="$ANDROID_NDK_HOME" \
             --sdk-path="$ANDROID_SDK_ROOT" \
             --name=BrickEmu
+
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
