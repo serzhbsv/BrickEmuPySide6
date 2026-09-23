@@ -1,7 +1,7 @@
 from PySide6 import QtCore, QtWidgets
 from PySide6.QtCore import Slot
 from PySide6.QtGui import QAction
-from PySide6.QtWidgets import QFileDialog, QMessageBox
+from PySide6.QtWidgets import QFileDialog, QMessageBox, QLabel
 import os
 
 from brick_widget import BrickWidget
@@ -28,6 +28,12 @@ class Window(QtWidgets.QMainWindow):
         self.actionExit = QAction("Exit", self)
         self.actionExit.triggered.connect(self.close)
         self.menuBar().addMenu("File").addAction(self.actionExit)
+
+        # Placeholder — без этого на Android белый экран
+        self._placeholder = QLabel("No game loaded.\nOpen a .brick file to start.")
+        self._placeholder.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        self._placeholder.setStyleSheet("font-size: 18px; color: #333;")
+        self.setCentralWidget(self._placeholder)
 
     @Slot()
     def _open_brick_file(self):
