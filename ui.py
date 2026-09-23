@@ -1,5 +1,6 @@
 from PySide6 import QtCore, QtWidgets
 from PySide6.QtCore import Slot
+from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QFileDialog, QMessageBox
 import os
 
@@ -20,11 +21,11 @@ class Window(QtWidgets.QMainWindow):
 
         self.setWindowTitle("BrickEmuPy")
 
-        self.actionOpen = QtWidgets.QAction("Open Brick File", self)
+        self.actionOpen = QAction("Open Brick File", self)
         self.actionOpen.triggered.connect(self._open_brick_file)
         self.menuBar().addMenu("File").addAction(self.actionOpen)
 
-        self.actionExit = QtWidgets.QAction("Exit", self)
+        self.actionExit = QAction("Exit", self)
         self.actionExit.triggered.connect(self.close)
         self.menuBar().addMenu("File").addAction(self.actionExit)
 
