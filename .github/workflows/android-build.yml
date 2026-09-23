@@ -62,7 +62,7 @@ jobs:
             --dest ${{ env.WHEELS_DIR }} \
             --platform any
 
-      - name: Patch pyside6-android-deploy for assets
+      - name: Patch pyside6-android-deploy for assets 1
         run: |
           python -c "
           import PySide6, os, re
