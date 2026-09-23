@@ -9,6 +9,7 @@ on:
 env:
   QT_VERSION: 6.8.3
   WHEELS_DIR: ./wheels
+  ANDROID_ARCH: aarch64
 
 jobs:
   build:
@@ -33,6 +34,9 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install pyproject-metadata setuptools wheel
+          # Устанавливаем десктопный PySide6 — нужен только ради
+          # консольной команды pyside6-android-deploy и патча
+          pip install PySide6==${{ env.QT_VERSION }}
 
       - name: Cache pyside6-android-deploy
         uses: actions/cache@v4
@@ -40,11 +44,11 @@ jobs:
           path: ~/.pyside6-android-deploy
           key: pyside6-deploy-${{ env.QT_VERSION }}-v1
 
-      - name: Cache wheels
+      - name: Cache Android wheels
         uses: actions/cache@v4
         with:
           path: ${{ env.WHEELS_DIR }}
-          key: wheels-pyside6-${{ env.QT_VERSION }}-v1
+          key: wheels-android-${{ env.QT_VERSION }}-${{ env.ANDROID_ARCH }}-v1
 
       - name: Cache gradle
         uses: actions/cache@v4
@@ -54,17 +58,22 @@ jobs:
             ~/.gradle/wrapper
           key: gradle-${{ runner.os }}-v1
 
-      - name: Download wheels
+      - name: Download Android wheels
         run: |
           mkdir -p ${{ env.WHEELS_DIR }}
-          pip download PySide6==${{ env.QT_VERSION }} shiboken6==${{ env.QT_VERSION }} \
-            --only-binary=:all: \
-            --dest ${{ env.WHEELS_DIR }}
+          QT_MIRROR="https://download.qt.io/official_releases/QtForPython"
 
-      - name: Install PySide6 and patch deploy script
+          wget -q --show-progress -O ${{ env.WHEELS_DIR }}/PySide6-android.whl \
+            "$QT_MIRROR/pyside6/PySide6-${{ env.QT_VERSION }}-${{ env.QT_VERSION }}-cp311-cp311-android_${{ env.ANDROID_ARCH }}.whl"
+
+          wget -q --show-progress -O ${{ env.WHEELS_DIR }}/shiboken6-android.whl \
+            "$QT_MIRROR/shiboken6/shiboken6-${{ env.QT_VERSION }}-${{ env.QT_VERSION }}-cp311-cp311-android_${{ env.ANDROID_ARCH }}.whl"
+
+          echo "Downloaded wheels:"
+          ls -lh ${{ env.WHEELS_DIR }}/
+
+      - name: Patch pyside6-android-deploy for assets
         run: |
-          pip install ./wheels/PySide6*.whl ./wheels/shiboken6*.whl
-
           python -c "
           import PySide6, os, re
 
@@ -133,6 +142,27 @@ jobs:
                           print(f'  Candidate: {path}')
           "
 
+      - name: Set architecture in pysidedeploy.spec
+        run: |
+          if grep -q '^
+$$
+buildozer
+$$
+' pysidedeploy.spec; then
+            if ! grep -q '^arch' pysidedeploy.spec; then
+              sed -i '/^
+$$
+buildozer
+$$
+/a arch = ${{ env.ANDROID_ARCH }}' pysidedeploy.spec
+              echo "Added arch = ${{ env.ANDROID_ARCH }} to [buildozer] section"
+            fi
+          else
+            echo -e '\n[buildozer]\narch = ${{ env.ANDROID_ARCH }}' >> pysidedeploy.spec
+            echo "Created [buildozer] section with arch"
+          fi
+          echo "=== pysidedeploy.spec ==="
+          cat pysidedeploy.spec
 
       - name: Create manifest arguments file
         run: |
@@ -141,8 +171,8 @@ jobs:
 
       - name: Build APK
         run: |
-          PYSIDE_WHEEL=$(find ${{ env.WHEELS_DIR }} -name "PySide6*.whl" | head -1)
-          SHIBOKEN_WHEEL=$(find ${{ env.WHEELS_DIR }} -name "shiboken6*.whl" | head -1)
+          PYSIDE_WHEEL="${{ env.WHEELS_DIR }}/PySide6-android.whl"
+          SHIBOKEN_WHEEL="${{ env.WHEELS_DIR }}/shiboken6-android.whl"
 
           echo "PySide6 wheel: $PYSIDE_WHEEL"
           echo "Shiboken6 wheel: $SHIBOKEN_WHEEL"
@@ -162,7 +192,18 @@ jobs:
           echo "APK: $APK"
           if [ -n "$APK" ]; then
             unzip -l "$APK" | grep -i "\.brick" || echo "No .brick files found in APK!"
+            unzip -l "$APK" | grep -i "assets" | head -20 || echo "No assets found in APK!"
           fi
+
+      - name: Find p4a build dirs
+        if: always()
+        run: |
+          echo "=== ~/.pyside6-android-deploy ==="
+          du -sh ~/.pyside6-android-deploy/ 2>/dev/null || echo "not found"
+          echo "=== find p4a build ==="
+          find /tmp -name "p4a-*" -type d 2>/dev/null | head -10
+          echo "=== largest /tmp dirs ==="
+          du -sh /tmp/* 2>/dev/null | sort -rh | head -10
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
