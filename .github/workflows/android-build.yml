@@ -39,7 +39,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install PySide6==${{ env.QT_VERSION }} buildozer cython jinja2
 
-      - name: Patch PySide6 to pin p4a.commit (Python 3.11)
+      - name: Create manifest arguments file
+        run: |
+          echo 'android:allowNativeHeapPointerTagging="false" android:hardwareAccelerated="false"' > extra_manifest_app_arguments.xml
+          cat extra_manifest_app_arguments.xml
+
+      - name: Patch PySide6 (p4a.commit + AndroidManifest fix)
         run: |
           cat > /tmp/patch_pyside6.py << 'PATCHEOF'
           import os
@@ -55,40 +60,64 @@ jobs:
                       continue
                   fpath = os.path.join(root, fname)
                   with open(fpath) as f:
-                      lines = f.readlines()
+                      content = f.read()
 
                   modified = False
-                  new_lines = []
-                  for line in lines:
-                      if "p4a.branch" in line and "develop" in line:
-                          new_line = line.replace("p4a.branch", "p4a.commit")
-                          new_line = new_line.replace("'develop'", "'" + commit + "'")
-                          new_line = new_line.replace('"develop"', '"' + commit + '"')
-                          new_line = new_line.replace("develop", commit)
-                          new_lines.append(new_line)
-                          modified = True
-                          print(f"  Patched in {fpath}:")
-                          print(f"    OLD: {line.strip()}")
-                          print(f"    NEW: {new_line.strip()}")
-                      else:
+                  new_content = content
+
+                  # Patch 1: Replace p4a.branch = develop with p4a.commit = <hash>
+                  if "p4a.branch" in content and "develop" in content:
+                      new_content = new_content.replace("'develop'", "'" + commit + "'")
+                      new_content = new_content.replace('"develop"', '"' + commit + '"')
+                      new_content = new_content.replace("p4a.branch", "p4a.commit")
+                      modified = True
+                      print(f"  Patched p4a.branch in {fpath}")
+
+                  # Patch 2: Add manifest arguments to buildozer.spec before running buildozer
+                  if "buildozer" in content and "Running" in content and "manifest" not in content:
+                      # Find the line where buildozer is called and insert our patch before it
+                      lines = new_content.split("\n")
+                      new_lines = []
+                      for line in lines:
+                          if "Running buildozer" in line or "run_buildozer" in line or "buildozer deployment" in line:
+                              indent = ""
+                              for ch in line:
+                                  if ch in " \t":
+                                      indent += ch
+                                  else:
+                                      break
+                              inject = (
+                                  indent + "import subprocess as _sp\n" +
+                                  indent + "try:\n" +
+                                  indent + "    with open('buildozer.spec', 'a') as _f:\n" +
+                                  indent + "        _f.write('\\nandroid.extra_manifest_application_arguments = ./extra_manifest_app_arguments.xml\\n')\n" +
+                                  indent + "    print('[PATCH] Added android.extra_manifest_application_arguments to buildozer.spec')\n" +
+                                  indent + "except Exception as _e:\n" +
+                                  indent + "    print(f'[PATCH] Warning: could not patch buildozer.spec: {_e}')\n"
+                              )
+                              new_lines.append(inject)
+                              modified = True
+                              print(f"  Injected manifest patch in {fpath}")
                           new_lines.append(line)
+                      if modified:
+                          new_content = "\n".join(new_lines)
 
                   if modified:
                       with open(fpath, "w") as f:
-                          f.writelines(new_lines)
+                          f.write(new_content)
                       patched_files.append(fpath)
 
           if not patched_files:
-              print("WARNING: No files with p4a.branch = develop were found!")
-              print("Listing all .py files in scripts dir:")
+              print("WARNING: No files were patched!")
+              print("Listing .py files in scripts dir:")
               for root, dirs, files in os.walk(scripts_dir):
                   for fname in files:
                       if fname.endswith(".py"):
                           fpath = os.path.join(root, fname)
                           with open(fpath) as f:
-                              content = f.read()
-                          if "p4a" in content or "branch" in content:
-                              print(f"  {fpath} (contains p4a or branch)")
+                              c = f.read()
+                          if "p4a" in c or "buildozer" in c:
+                              print(f"  {fpath}")
           else:
               print(f"Successfully patched {len(patched_files)} files")
           PATCHEOF
