@@ -13,7 +13,6 @@ jobs:
     env:
       QT_VERSION: "6.8.3"
       WHEELS_DIR: "./wheels"
-      P4A_BUILD_PYTHON_VERSION: "3.11.13"
 
     steps:
       - name: Checkout repository
@@ -39,6 +38,42 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install PySide6==${{ env.QT_VERSION }} buildozer cython jinja2
+
+      - name: Patch PySide6 to pin p4a.commit (Python 3.11)
+        run: |
+          python -c "
+          import os, PySide6
+          deploy_dir = os.path.join(PySide6.__path__[0], 'scripts')
+          commit = '3762c88c56e3443efb8eba2a02a2604b680240fd'
+          for root, dirs, files in os.walk(deploy_dir):
+              for fname in files:
+                  if not fname.endswith('.py'):
+                      continue
+                  fpath = os.path.join(root, fname)
+                  with open(fpath) as f:
+                      content = f.read()
+                  if 'p4a.branch' not in content:
+                      continue
+                  print(f'Found p4a.branch in: {fpath}')
+                  lines = content.split(chr(10))
+                  new_lines = []
+                  patched = False
+                  for line in lines:
+                      new_lines.append(line)
+                      if 'p4a.branch' in line and 'develop' in line:
+                          new_line = line.replace('branch', 'commit')
+                          new_line = new_line.replace(chr(39) + 'develop' + chr(39), chr(39) + commit + chr(39))
+                          new_line = new_line.replace(chr(34) + 'develop' + chr(34), chr(34) + commit + chr(34))
+                          if new_line == line:
+                              new_line = line.replace('develop', commit)
+                          new_lines.append(new_line)
+                          print(f'  Added: {new_line.strip()}')
+                          patched = True
+                  if patched:
+                      with open(fpath, 'w') as f:
+                          f.write(chr(10).join(new_lines))
+                      print('  Patched!')
+          "
 
       - name: Setup Android SDK paths
         run: |
@@ -67,26 +102,6 @@ jobs:
             "https://mirror.yandex.ru/mirrors/qt.io/official_releases/QtForPython/shiboken6/shiboken6-6.8.3-6.8.3-cp311-cp311-android_aarch64.whl"
 
           ls -lh ${{ env.WHEELS_DIR }}/
-
-      - name: Patch pysidedeploy.spec for Python 3.11
-        run: |
-          if [ ! -f "pysidedeploy.spec" ]; then
-            echo "ERROR: pysidedeploy.spec not found!"
-            exit 1
-          fi
-
-          # Удаляем секцию [buildozer] целиком (все строки от [buildozer] до следующей [ или конца файла)
-          sed -i '/^\[buildozer\]$/,/^\[/d' pysidedeploy.spec 2>/dev/null || true
-
-          # Дописываем секцию построчно через echo — это самый надёжный способ
-          echo "[buildozer]" >> pysidedeploy.spec
-          echo "python.version = 3.11.13" >> pysidedeploy.spec
-          echo "requirements = python3,shiboken6,PySide6" >> pysidedeploy.spec
-          echo "p4a.commit = 3762c88c56e3443efb8eba2a02a2604b680240fd" >> pysidedeploy.spec
-
-          echo "=== Patched pysidedeploy.spec ==="
-          cat pysidedeploy.spec
-
 
       - name: Build APK
         run: |
