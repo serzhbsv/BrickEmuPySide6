@@ -21,24 +21,30 @@ class Window(QtWidgets.QMainWindow):
 
         self.setWindowTitle("BrickEmuPy")
 
-        self.actionOpen = QAction("Open Brick File", self)
-        self.actionOpen.triggered.connect(self._open_brick_file)
-        self.menuBar().addMenu("File").addAction(self.actionOpen)
+        # Central widget с кнопкой вместо невидимого меню
+        central = QtWidgets.QWidget()
+        layout = QtWidgets.QVBoxLayout(central)
+        layout.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
 
-        self.actionExit = QAction("Exit", self)
-        self.actionExit.triggered.connect(self.close)
-        self.menuBar().addMenu("File").addAction(self.actionExit)
+        label = QLabel("No game loaded.\nOpen a .brick file to start.")
+        label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        label.setStyleSheet("font-size: 18px; color: #333;")
+        layout.addWidget(label)
 
-        # Placeholder — без этого на Android белый экран
-        self._placeholder = QLabel("No game loaded.\nOpen a .brick file to start.")
-        self._placeholder.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-        self._placeholder.setStyleSheet("font-size: 18px; color: #333;")
-        self.setCentralWidget(self._placeholder)
+        self.btn_open = QtWidgets.QPushButton("Open .brick file")
+        self.btn_open.setMinimumHeight(64)
+        self.btn_open.setStyleSheet("font-size: 18px; padding: 12px;")
+        self.btn_open.clicked.connect(self._open_brick_file)
+        layout.addWidget(self.btn_open)
+
+        self.setCentralWidget(central)
 
     @Slot()
     def _open_brick_file(self):
+        # На Android стартуем из директории приложения
+        start_dir = os.environ.get("ANDROID_ARGUMENT", ".")
         file_path, _ = QFileDialog.getOpenFileName(
-            self, "Open Brick Game", "", "Brick files (*.brick);;All files (*)"
+            self, "Open Brick Game", start_dir, "Brick files (*.brick);;All files (*)"
         )
         if not file_path:
             return
@@ -57,3 +63,4 @@ class Window(QtWidgets.QMainWindow):
         if self._current_brick:
             self._current_brick.stop_emulator()
         event.accept()
+
