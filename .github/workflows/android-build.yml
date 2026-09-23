@@ -1,164 +1,143 @@
-name: Build Android APK (PySide6)
+name: Build Android APK
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [main]
   pull_request:
-    branches: [ "main" ]
+    branches: [main]
+
+env:
+  QT_VERSION: 6.8.3
+  WHEELS_DIR: ./wheels
 
 jobs:
-  build-apk:
+  build:
     runs-on: ubuntu-latest
 
-    env:
-      QT_VERSION: "6.8.3"
-      WHEELS_DIR: "./wheels"
-
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Python 3.11
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: '3.11'
 
-      - name: Setup Java 17
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Install system dependencies
+      - name: Install dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libltdl-dev libtool autoconf automake pkg-config
+          pip install --upgrade pip
+          pip install pyproject-metadata setuptools wheel
 
-      - name: Install build dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install PySide6==${{ env.QT_VERSION }} buildozer cython jinja2
+      - name: Cache pyside6-android-deploy
+        uses: actions/cache@v4
+        with:
+          path: ~/.pyside6-android-deploy
+          key: pyside6-deploy-${{ env.QT_VERSION }}-v1
 
-      - name: Create manifest arguments file
-        run: |
-          echo 'android:allowNativeHeapPointerTagging="false" android:hardwareAccelerated="false"' > extra_manifest_app_arguments.xml
-          cat extra_manifest_app_arguments.xml
+      - name: Cache wheels
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.WHEELS_DIR }}
+          key: wheels-pyside6-${{ env.QT_VERSION }}-v1
 
-      - name: Patch PySide6 (p4a.commit + AndroidManifest fix)
-        run: |
-          cat > /tmp/patch_pyside6.py << 'PATCHEOF'
-          import os
-          import PySide6
-
-          commit = "3762c88c56e3443efb8eba2a02a2604b680240fd"
-          scripts_dir = os.path.join(PySide6.__path__[0], "scripts")
-          patched_files = []
-
-          for root, dirs, files in os.walk(scripts_dir):
-              for fname in files:
-                  if not fname.endswith(".py"):
-                      continue
-                  fpath = os.path.join(root, fname)
-                  with open(fpath) as f:
-                      content = f.read()
-
-                  modified = False
-                  new_content = content
-
-                  # Patch 1: Replace p4a.branch = develop with p4a.commit = <hash>
-                  if "p4a.branch" in content and "develop" in content:
-                      new_content = new_content.replace("'develop'", "'" + commit + "'")
-                      new_content = new_content.replace('"develop"', '"' + commit + '"')
-                      new_content = new_content.replace("p4a.branch", "p4a.commit")
-                      modified = True
-                      print(f"  Patched p4a.branch in {fpath}")
-
-                  # Patch 2: Add manifest arguments to buildozer.spec before running buildozer
-                  if "buildozer" in content and "Running" in content and "manifest" not in content:
-                      # Find the line where buildozer is called and insert our patch before it
-                      lines = new_content.split("\n")
-                      new_lines = []
-                      for line in lines:
-                          if "Running buildozer" in line or "run_buildozer" in line or "buildozer deployment" in line:
-                              indent = ""
-                              for ch in line:
-                                  if ch in " \t":
-                                      indent += ch
-                                  else:
-                                      break
-                              inject = (
-                                  indent + "import subprocess as _sp\n" +
-                                  indent + "try:\n" +
-                                  indent + "    with open('buildozer.spec', 'a') as _f:\n" +
-                                  indent + "        _f.write('\\nandroid.extra_manifest_application_arguments = ./extra_manifest_app_arguments.xml\\n')\n" +
-                                  indent + "    print('[PATCH] Added android.extra_manifest_application_arguments to buildozer.spec')\n" +
-                                  indent + "except Exception as _e:\n" +
-                                  indent + "    print(f'[PATCH] Warning: could not patch buildozer.spec: {_e}')\n"
-                              )
-                              new_lines.append(inject)
-                              modified = True
-                              print(f"  Injected manifest patch in {fpath}")
-                          new_lines.append(line)
-                      if modified:
-                          new_content = "\n".join(new_lines)
-
-                  if modified:
-                      with open(fpath, "w") as f:
-                          f.write(new_content)
-                      patched_files.append(fpath)
-
-          if not patched_files:
-              print("WARNING: No files were patched!")
-              print("Listing .py files in scripts dir:")
-              for root, dirs, files in os.walk(scripts_dir):
-                  for fname in files:
-                      if fname.endswith(".py"):
-                          fpath = os.path.join(root, fname)
-                          with open(fpath) as f:
-                              c = f.read()
-                          if "p4a" in c or "buildozer" in c:
-                              print(f"  {fpath}")
-          else:
-              print(f"Successfully patched {len(patched_files)} files")
-          PATCHEOF
-
-          python /tmp/patch_pyside6.py
-
-      - name: Setup Android SDK paths
-        run: |
-          export ANDROID_SDK_ROOT="/usr/local/lib/android/sdk"
-          export ANDROID_NDK_HOME=$(ls -d /usr/local/lib/android/sdk/ndk/* | head -1)
-
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
-          echo "ANDROID_NDK_HOME=$ANDROID_NDK_HOME" >> $GITHUB_ENV
-
-          mkdir -p "$ANDROID_SDK_ROOT/tools/bin"
-          if [ -f "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" ]; then
-            ln -sf "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" "$ANDROID_SDK_ROOT/tools/bin/sdkmanager"
-          fi
-
-          yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
-          "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "build-tools;34.0.0" "platforms;android-34" > /dev/null 2>&1 || true
-
-      - name: Download Android wheels from Qt mirror
-        run: |
-          mkdir -p ${{ env.WHEELS_DIR }}
-
-          curl -L -o ${{ env.WHEELS_DIR }}/PySide6-6.8.3-6.8.3-cp311-cp311-android_aarch64.whl \
-            "https://mirror.yandex.ru/mirrors/qt.io/official_releases/QtForPython/pyside6/PySide6-6.8.3-6.8.3-cp311-cp311-android_aarch64.whl"
-
-          curl -L -o ${{ env.WHEELS_DIR }}/shiboken6-6.8.3-6.8.3-cp311-cp311-android_aarch64.whl \
-            "https://mirror.yandex.ru/mirrors/qt.io/official_releases/QtForPython/shiboken6/shiboken6-6.8.3-6.8.3-cp311-cp311-android_aarch64.whl"
-
-          ls -lh ${{ env.WHEELS_DIR }}/
-
-      - name: Cache buildozer build
+      - name: Cache gradle
         uses: actions/cache@v4
         with:
           path: |
-            ./.buildozer
-            ~/buildozer
-          key: buildozer-${{ runner.os }}-py311-v2
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-v1
+
+      - name: Download wheels
+        run: |
+          mkdir -p ${{ env.WHEELS_DIR }}
+          pip download PySide6==${{ env.QT_VERSION }} shiboken6==${{ env.QT_VERSION }} \
+            --only-binary=:all: \
+            --dest ${{ env.WHEELS_DIR }} \
+            --platform any
+
+      - name: Patch pyside6-android-deploy for assets
+        run: |
+          python -c "
+          import PySide6, os, re
+
+          base = os.path.dirname(PySide6.__file__)
+          patched = False
+
+          for root, dirs, files in os.walk(base):
+              for f in files:
+                  if not f.endswith('.py'):
+                      continue
+                  path = os.path.join(root, f)
+                  try:
+                      with open(path) as fh:
+                          content = fh.read()
+                  except:
+                      continue
+
+                  modified = False
+
+                  # 1) Add source.include_patterns for assets/ if not present
+                  if 'include_exts' in content and 'include_patterns' not in content:
+                      # Insert include_patterns before include_exts
+                      content = re.sub(
+                          r'(source\.include_exts\s*=)',
+                          r'source.include_patterns = assets/*,assets/**/*\n\1',
+                          content
+                      )
+                      modified = True
+
+                  # 2) Add android.add_assets = assets if not present
+                  if 'android.add_assets' not in content and 'include_exts' in content:
+                      content = re.sub(
+                          r'(source\.include_exts\s*=)',
+                          r'android.add_assets = assets\n\1',
+                          content
+                      )
+                      modified = True
+
+                  # 3) If include_patterns already exists but doesn't mention assets
+                  if 'include_patterns' in content and 'assets/' not in content:
+                      content = re.sub(
+                          r'(source\.include_patterns\s*=\s*)',
+                          r'\1assets/*,assets/**/*,',
+                          content
+                      )
+                      modified = True
+
+                  if modified:
+                      with open(path, 'w') as fh:
+                          fh.write(content)
+                      print(f'Patched: {path}')
+                      patched = True
+
+          if not patched:
+              print('WARNING: No files were patched!')
+              print('Searching for buildozer.spec generation...')
+              for root, dirs, files in os.walk(base):
+                  for f in files:
+                      if not f.endswith('.py'):
+                          continue
+                      path = os.path.join(root, f)
+                      try:
+                          with open(path) as fh:
+                              content = fh.read()
+                      except:
+                          continue
+                      if 'buildozer' in content.lower() and 'spec' in content.lower():
+                          print(f'  Candidate: {path}')
+          "
+
+      - name: Create manifest arguments file
+        run: |
+          echo 'android:allowNativeHeapPointerTagging="false"' > extra_manifest_app_arguments.xml
+          cat extra_manifest_app_arguments.xml
 
       - name: Build APK
         run: |
@@ -177,11 +156,18 @@ jobs:
             --sdk-path="$ANDROID_SDK_ROOT" \
             --name=BrickEmu
 
+      - name: Verify .brick files in APK
+        run: |
+          APK=$(find . -name "*.apk" | head -1)
+          echo "APK: $APK"
+          if [ -n "$APK" ]; then
+            unzip -l "$APK" | grep -i "\.brick" || echo "No .brick files found in APK!"
+          fi
 
-      - name: Upload APK Artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: brick-emu-apk
+          name: BrickEmuPy.apk
           path: |
             *.apk
-            *.aab
+            build/*.apk
