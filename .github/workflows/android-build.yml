@@ -61,8 +61,10 @@ jobs:
             --only-binary=:all: \
             --dest ${{ env.WHEELS_DIR }}
 
-      - name: Patch pyside6-android-deploy for assets
+      - name: Install PySide6 and patch deploy script
         run: |
+          pip install ./wheels/PySide6*.whl ./wheels/shiboken6*.whl
+
           python -c "
           import PySide6, os, re
 
@@ -84,7 +86,6 @@ jobs:
 
                   # 1) Add source.include_patterns for assets/ if not present
                   if 'include_exts' in content and 'include_patterns' not in content:
-                      # Insert include_patterns before include_exts
                       content = re.sub(
                           r'(source\.include_exts\s*=)',
                           r'source.include_patterns = assets/*,assets/**/*\n\1',
@@ -118,7 +119,6 @@ jobs:
 
           if not patched:
               print('WARNING: No files were patched!')
-              print('Searching for buildozer.spec generation...')
               for root, dirs, files in os.walk(base):
                   for f in files:
                       if not f.endswith('.py'):
@@ -132,6 +132,7 @@ jobs:
                       if 'buildozer' in content.lower() and 'spec' in content.lower():
                           print(f'  Candidate: {path}')
           "
+
 
       - name: Create manifest arguments file
         run: |
