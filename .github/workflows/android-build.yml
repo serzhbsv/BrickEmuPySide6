@@ -158,7 +158,7 @@ jobs:
           path: |
             ./.buildozer
             ~/buildozer
-          key: buildozer-${{ runner.os }}-py311-v1
+          key: buildozer-${{ runner.os }}-py311-v2
 
       - name: Build APK
         run: |
