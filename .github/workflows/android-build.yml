@@ -41,39 +41,59 @@ jobs:
 
       - name: Patch PySide6 to pin p4a.commit (Python 3.11)
         run: |
-          python -c "
-          import os, PySide6
-          deploy_dir = os.path.join(PySide6.__path__[0], 'scripts')
-          commit = '3762c88c56e3443efb8eba2a02a2604b680240fd'
-          for root, dirs, files in os.walk(deploy_dir):
+          cat > /tmp/patch_pyside6.py << 'PATCHEOF'
+          import os
+          import PySide6
+
+          commit = "3762c88c56e3443efb8eba2a02a2604b680240fd"
+          scripts_dir = os.path.join(PySide6.__path__[0], "scripts")
+          patched_files = []
+
+          for root, dirs, files in os.walk(scripts_dir):
               for fname in files:
-                  if not fname.endswith('.py'):
+                  if not fname.endswith(".py"):
                       continue
                   fpath = os.path.join(root, fname)
                   with open(fpath) as f:
-                      content = f.read()
-                  if 'p4a.branch' not in content:
-                      continue
-                  print(f'Found p4a.branch in: {fpath}')
-                  lines = content.split(chr(10))
+                      lines = f.readlines()
+
+                  modified = False
                   new_lines = []
-                  patched = False
                   for line in lines:
-                      new_lines.append(line)
-                      if 'p4a.branch' in line and 'develop' in line:
-                          new_line = line.replace('branch', 'commit')
-                          new_line = new_line.replace(chr(39) + 'develop' + chr(39), chr(39) + commit + chr(39))
-                          new_line = new_line.replace(chr(34) + 'develop' + chr(34), chr(34) + commit + chr(34))
-                          if new_line == line:
-                              new_line = line.replace('develop', commit)
+                      if "p4a.branch" in line and "develop" in line:
+                          new_line = line.replace("p4a.branch", "p4a.commit")
+                          new_line = new_line.replace("'develop'", "'" + commit + "'")
+                          new_line = new_line.replace('"develop"', '"' + commit + '"')
+                          new_line = new_line.replace("develop", commit)
                           new_lines.append(new_line)
-                          print(f'  Added: {new_line.strip()}')
-                          patched = True
-                  if patched:
-                      with open(fpath, 'w') as f:
-                          f.write(chr(10).join(new_lines))
-                      print('  Patched!')
-          "
+                          modified = True
+                          print(f"  Patched in {fpath}:")
+                          print(f"    OLD: {line.strip()}")
+                          print(f"    NEW: {new_line.strip()}")
+                      else:
+                          new_lines.append(line)
+
+                  if modified:
+                      with open(fpath, "w") as f:
+                          f.writelines(new_lines)
+                      patched_files.append(fpath)
+
+          if not patched_files:
+              print("WARNING: No files with p4a.branch = develop were found!")
+              print("Listing all .py files in scripts dir:")
+              for root, dirs, files in os.walk(scripts_dir):
+                  for fname in files:
+                      if fname.endswith(".py"):
+                          fpath = os.path.join(root, fname)
+                          with open(fpath) as f:
+                              content = f.read()
+                          if "p4a" in content or "branch" in content:
+                              print(f"  {fpath} (contains p4a or branch)")
+          else:
+              print(f"Successfully patched {len(patched_files)} files")
+          PATCHEOF
+
+          python /tmp/patch_pyside6.py
 
       - name: Setup Android SDK paths
         run: |
