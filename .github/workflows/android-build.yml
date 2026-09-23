@@ -59,10 +59,9 @@ jobs:
           mkdir -p ${{ env.WHEELS_DIR }}
           pip download PySide6==${{ env.QT_VERSION }} shiboken6==${{ env.QT_VERSION }} \
             --only-binary=:all: \
-            --dest ${{ env.WHEELS_DIR }} \
-            --platform any
+            --dest ${{ env.WHEELS_DIR }}
 
-      - name: Patch pyside6-android-deploy for assets 1
+      - name: Patch pyside6-android-deploy for assets
         run: |
           python -c "
           import PySide6, os, re
