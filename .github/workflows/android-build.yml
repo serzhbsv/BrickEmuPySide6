@@ -72,76 +72,6 @@ jobs:
           echo "Downloaded wheels:"
           ls -lh ${{ env.WHEELS_DIR }}/
 
-      - name: Patch pyside6-android-deploy for assets
-        run: |
-          python -c "
-          import PySide6, os, re
-
-          base = os.path.dirname(PySide6.__file__)
-          patched = False
-
-          for root, dirs, files in os.walk(base):
-              for f in files:
-                  if not f.endswith('.py'):
-                      continue
-                  path = os.path.join(root, f)
-                  try:
-                      with open(path) as fh:
-                          content = fh.read()
-                  except:
-                      continue
-
-                  modified = False
-
-                  # 1) Add source.include_patterns for assets/ if not present
-                  if 'include_exts' in content and 'include_patterns' not in content:
-                      content = re.sub(
-                          r'(source\.include_exts\s*=)',
-                          r'source.include_patterns = assets/*,assets/**/*\n\1',
-                          content
-                      )
-                      modified = True
-
-                  # 2) Add android.add_assets = assets if not present
-                  if 'android.add_assets' not in content and 'include_exts' in content:
-                      content = re.sub(
-                          r'(source\.include_exts\s*=)',
-                          r'android.add_assets = assets\n\1',
-                          content
-                      )
-                      modified = True
-
-                  # 3) If include_patterns already exists but doesn't mention assets
-                  if 'include_patterns' in content and 'assets/' not in content:
-                      content = re.sub(
-                          r'(source\.include_patterns\s*=\s*)',
-                          r'\1assets/*,assets/**/*,',
-                          content
-                      )
-                      modified = True
-
-                  if modified:
-                      with open(path, 'w') as fh:
-                          fh.write(content)
-                      print(f'Patched: {path}')
-                      patched = True
-
-          if not patched:
-              print('WARNING: No files were patched!')
-              for root, dirs, files in os.walk(base):
-                  for f in files:
-                      if not f.endswith('.py'):
-                          continue
-                      path = os.path.join(root, f)
-                      try:
-                          with open(path) as fh:
-                              content = fh.read()
-                      except:
-                          continue
-                      if 'buildozer' in content.lower() and 'spec' in content.lower():
-                          print(f'  Candidate: {path}')
-          "
-
       - name: Patch android_deploy.py to inject assets config
         run: |
           cat > /tmp/patch_deploy.py << 'PATCH'
@@ -181,8 +111,6 @@ jobs:
           PATCH
 
           python /tmp/patch_deploy.py
-
-
 
       - name: Create manifest arguments file
         run: |
