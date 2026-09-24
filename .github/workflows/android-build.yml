@@ -144,12 +144,15 @@ jobs:
 
 
       - name: Build APK
+        env:
+          ANDROIDSDK: /usr/local/lib/android/sdk
+          ANDROIDNDK: /usr/local/lib/android/sdk/ndk/27.3.13750724
         run: |
-          PYSIDE_WHEEL="${{ env.WHEELS_DIR }}/PySide6-android.whl"
-          SHIBOKEN_WHEEL="${{ env.WHEELS_DIR }}/shiboken6-android.whl"
+          # Запускаем патчер в фоне — он дождётся клонирования p4a и пропатчит libffi
+          /tmp/patch_libffi_recipe.sh &
 
-          echo "PySide6 wheel: $PYSIDE_WHEEL"
-          echo "Shiboken6 wheel: $SHIBOKEN_WHEEL"
+          PYSIDE_WHEEL="./wheels/PySide6-android.whl"
+          SHIBOKEN_WHEEL="./wheels/shiboken6-android.whl"
 
           pyside6-android-deploy \
             -c pysidedeploy.spec \
