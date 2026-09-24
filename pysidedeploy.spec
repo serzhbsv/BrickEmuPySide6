@@ -31,6 +31,7 @@ wheel_pyside =
 plugins =
 
 [buildozer]
+arch = aarch64
 # Режим сборки: debug или release
 mode = debug
 # Директория recipe (оставь пустой)

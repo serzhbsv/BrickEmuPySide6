@@ -142,27 +142,48 @@ jobs:
                           print(f'  Candidate: {path}')
           "
 
-      - name: Set architecture in pysidedeploy.spec
+      - name: Patch android_deploy.py to inject assets config
         run: |
-          if grep -q '^
-$$
-buildozer
-$$
-' pysidedeploy.spec; then
-            if ! grep -q '^arch' pysidedeploy.spec; then
-              sed -i '/^
-$$
-buildozer
-$$
-/a arch = ${{ env.ANDROID_ARCH }}' pysidedeploy.spec
-              echo "Added arch = ${{ env.ANDROID_ARCH }} to [buildozer] section"
-            fi
-          else
-            echo -e '\n[buildozer]\narch = ${{ env.ANDROID_ARCH }}' >> pysidedeploy.spec
-            echo "Created [buildozer] section with arch"
-          fi
-          echo "=== pysidedeploy.spec ==="
-          cat pysidedeploy.spec
+          python -c "
+          import PySide6, os
+
+          deploy_script = os.path.join(os.path.dirname(PySide6.__file__), 'scripts', 'android_deploy.py')
+          print(f'Patching: {deploy_script}')
+
+          with open(deploy_script) as f:
+              content = f.read()
+
+          # Находим строку запуска buildozer и вставляем патч buildozer.spec перед ней
+          marker = 'logging.info(\"[DEPLOY] Running buildozer deployment\")'
+          if marker not in content:
+              # Запасной вариант
+              marker = 'subprocess.run'
+              idx = content.find(marker)
+              if idx == -1:
+                  print('WARNING: Could not find buildozer launch point')
+                  exit(0)
+              # Ищем начало блока
+              while idx > 0 and content[idx] != '\n':
+                  idx -= 1
+          else:
+              idx = content.find(marker)
+
+          inject = '''
+          # --- Patch: inject assets into buildozer.spec ---
+          with open(\"buildozer.spec\", \"a\") as _f:
+              _f.write(\"\\nsource.include_patterns = assets/*,assets/**/*\\n\")
+              _f.write(\"android.add_assets = assets\\n\")
+          # --- End patch ---
+          '''
+
+          content = content[:idx] + inject + '\n' + content[idx:]
+
+          with open(deploy_script, 'w') as f:
+              f.write(content)
+
+          print('Patch applied successfully')
+          "
+
 
       - name: Create manifest arguments file
         run: |
