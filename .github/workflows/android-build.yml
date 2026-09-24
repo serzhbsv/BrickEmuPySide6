@@ -142,9 +142,27 @@ jobs:
           ls -la "$SDK_ROOT/tools/bin/sdkmanager"
           "$SDK_ROOT/tools/bin/sdkmanager" --version
 
+      - name: Fix libffi LT_SYS_SYMBOL_USCORE macro
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libtool libltdl-dev
+
+          # Проверяем, где лежат m4-макросы
+          echo "=== m4 files ==="
+          find /usr -name "libtool.m4" -o -name "ltdl.m4" 2>/dev/null
+          echo "=== LT_SYS_SYMBOL_USCORE ==="
+          grep -rl "LT_SYS_SYMBOL_USCORE" /usr/share/aclocal/ 2>/dev/null || echo "NOT FOUND"
+
+          # Создаём symlinks в /usr/local/share/aclocal — запасной путь поиска
+          sudo mkdir -p /usr/local/share/aclocal
+          for f in /usr/share/aclocal/*.m4; do
+            [ -f "$f" ] && sudo ln -sf "$f" "/usr/local/share/aclocal/$(basename $f)"
+          done
+
 
       - name: Build APK
         env:
+          ACLOCAL_PATH: /usr/share/aclocal:/usr/local/share/aclocal
           ANDROIDSDK: /usr/local/lib/android/sdk
           ANDROIDNDK: /usr/local/lib/android/sdk/ndk/27.3.13750724
         run: |
