@@ -159,6 +159,56 @@ jobs:
             [ -f "$f" ] && sudo ln -sf "$f" "/usr/local/share/aclocal/$(basename $f)"
           done
 
+      - name: Patch android_deploy.py
+        run: |
+          cat > /tmp/patch_deploy.py << 'PATCH'
+          import PySide6, os
+
+          deploy_script = os.path.join(os.path.dirname(PySide6.__file__), 'scripts', 'android_deploy.py')
+          print(f'Reading: {deploy_script}')
+
+          with open(deploy_script) as f:
+              lines = f.readlines()
+
+          marker = 'Running buildozer deployment'
+          marker_idx = None
+          for i, line in enumerate(lines):
+              if marker in line:
+                  marker_idx = i
+                  break
+
+          if marker_idx is None:
+              print('ERROR: marker not found')
+              exit(1)
+
+          indent = len(lines[marker_idx]) - len(lines[marker_idx].lstrip())
+          pad = ' ' * indent
+
+          inject = [
+              pad + '# --- Patch: fix buildozer.spec for assets + python version ---\n',
+              pad + 'with open("buildozer.spec", "a") as _f:\n',
+              pad + '    _f.write("\\n# --- Assets ---\\n")\n',
+              pad + '    _f.write("source.include_patterns = assets/*,assets/**/*\\n")\n',
+              pad + '    _f.write("android.add_assets = assets\\n")\n',
+              pad + '    _f.write("\\n# --- Pin Python 3.11 ---\\n")\n',
+              pad + '    _f.write("requirements = python3==3.11.11,hostpython3==3.11.11,shiboken6,PySide6\\n")\n',
+              pad + '# --- End patch ---\n',
+          ]
+
+          new_lines = lines[:marker_idx] + inject + lines[marker_idx:]
+          with open(deploy_script, 'w') as f:
+              f.writelines(new_lines)
+
+          print(f'Patch applied: inserted {len(inject)} lines')
+
+          print('\n========== FULL android_deploy.py AFTER PATCH ==========')
+          with open(deploy_script) as f:
+              for i, line in enumerate(f, 1):
+                  print(f'{i:4d}: {line}', end='')
+          print('\n========== END ==========')
+          PATCH
+
+          python /tmp/patch_deploy.py
 
       - name: Build APK
         env:
