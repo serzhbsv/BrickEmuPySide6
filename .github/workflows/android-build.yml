@@ -132,6 +132,17 @@ jobs:
           echo 'android:allowNativeHeapPointerTagging="false"' > extra_manifest_app_arguments.xml
           cat extra_manifest_app_arguments.xml
 
+      - name: Fix sdkmanager path for buildozer
+        run: |
+          SDK_ROOT="/usr/local/lib/android/sdk"
+          mkdir -p "$SDK_ROOT/tools/bin"
+          ln -sf "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" \
+                 "$SDK_ROOT/tools/bin/sdkmanager"
+          echo "Symlink created:"
+          ls -la "$SDK_ROOT/tools/bin/sdkmanager"
+          "$SDK_ROOT/tools/bin/sdkmanager" --version
+
+
       - name: Build APK
         run: |
           PYSIDE_WHEEL="${{ env.WHEELS_DIR }}/PySide6-android.whl"
