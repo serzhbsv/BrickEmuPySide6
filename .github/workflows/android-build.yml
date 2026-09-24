@@ -186,12 +186,22 @@ jobs:
 
           inject = [
               pad + '# --- Patch: fix buildozer.spec for assets + python version ---\n',
-              pad + 'with open("buildozer.spec", "a") as _f:\n',
-              pad + '    _f.write("\\n# --- Assets ---\\n")\n',
-              pad + '    _f.write("source.include_patterns = assets/*,assets/**/*\\n")\n',
-              pad + '    _f.write("android.add_assets = assets\\n")\n',
-              pad + '    _f.write("\\n# --- Pin Python 3.11 ---\\n")\n',
-              pad + '    _f.write("requirements = python3==3.11.11,hostpython3==3.11.11,shiboken6,PySide6\\n")\n',
+              pad + 'import re as _re\n',
+              pad + 'with open("buildozer.spec", "r") as _f:\n',
+              pad + '    _spec = _f.read()\n',
+              pad + '# Remove existing source.include_patterns lines\n',
+              pad + '_spec = _re.sub(r"^source\\.include_patterns\\s*=.*$", "", _spec, flags=_re.MULTILINE)\n',
+              pad + '# Remove existing android.add_assets lines\n',
+              pad + '_spec = _re.sub(r"^android\\.add_assets\\s*=.*$", "", _spec, flags=_re.MULTILINE)\n',
+              pad + '# Remove existing requirements lines\n',
+              pad + '_spec = _re.sub(r"^requirements\\s*=.*$", "", _spec, flags=_re.MULTILINE)\n',
+              pad + '# Append our versions\n',
+              pad + '_spec += "\\n# --- Patched ---\\n"\n',
+              pad + '_spec += "source.include_patterns = assets/*,assets/**/*\\n"\n',
+              pad + '_spec += "android.add_assets = assets\\n"\n',
+              pad + '_spec += "requirements = python3==3.11,hostpython3==3.11,shiboken6,PySide6\\n"\n',
+              pad + 'with open("buildozer.spec", "w") as _f:\n',
+              pad + '    _f.write(_spec)\n',
               pad + '# --- End patch ---\n',
           ]
 
@@ -209,6 +219,7 @@ jobs:
           PATCH
 
           python /tmp/patch_deploy.py
+
 
       - name: Build APK
         env:
